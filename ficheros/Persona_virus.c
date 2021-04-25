@@ -6,6 +6,8 @@ person_t create_person(){
     prob_death = gsl_ran_beta(r, alfa, beta);
     age = (int )gsl_ran_beta(r, alfa, beta); //Cambiar
     state =(int)gsl_ran_beta(r, alfa, beta); //Cambiar porque tiene que estar entre 1 y 5
+    periodo_incu = recovery_period; //Nuevo
+    recovery = recovery_period; //Nuevo
     gsl_rng_free(r);
     calculate_init_position();
 

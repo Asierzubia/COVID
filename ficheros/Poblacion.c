@@ -28,7 +28,7 @@ void calculate_probs(){
 
     init_gsl();    
     prob_infection = gsl_ran_beta(r, alfa, beta);
-    recovery_period = gsl_ran_beta(r, alfa, beta);
+    recovery_period = random_number(3, 5); //El periodo de contagio va a estar entre 3 y 5.
     prob_direction = gsl_ran_beta(r, alfa, beta);
     prob_speed = gsl_ran_beta(r, alfa, beta);
     gsl_rng_free(r);
@@ -45,14 +45,15 @@ void create_population(){
 
     //Inicializo la lista
     init_lista();
+    //Calculo las probabilidades y la edad media
+    calculate_ageMean();
+    calculate_probs();
     //Relleno la lista con personas
     for(i = 0; i < size; i++ ){
         person = createPerson();
         personList[i] = person;
     }
-    //Calculo las probabilidades y la edad media
-    calculate_ageMean();
-    calculate_probs();
+    
 
 }
 
