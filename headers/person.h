@@ -15,7 +15,9 @@ typedef struct person {
     float prob_death;
     int coord[2];
     int speed[2];
-    int init_position;
+    int init_position; //Nuevo
+    int periodo_incu; //Nuevo
+    int recovery;
 
 } person_t;
 
