@@ -1,14 +1,10 @@
-#include <mpi.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <stdbool.h>
-#include <math.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
-#include <stdbool.h>
+#ifndef VACCINE_H
+#define VACCINE_H
 
 int num_persons_to_vaccine;
 int percent;
+typedef enum {false, true} bool;
+  
+bool vacunate(int age);
 
+#endif // VACCINE_H
