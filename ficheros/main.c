@@ -18,14 +18,9 @@
 int i, j, k;
 int main(int argc, char *argv[])
 {
-    int iterations = 1000;
-    size = argv[1];
+    init_world();
     create_population();
-    create_enviroment();
-    for (j = 0; j < iterations; j++)
-    {
-        per_cicle;
-    }
+    per_cicle();
 }
 
 //-------------DUDAS-----------------------------------------
@@ -35,100 +30,74 @@ int main(int argc, char *argv[])
 
 void per_cicle()
 {
-    /*---------------IDEA--------------------------------------*/
-    /*La idea es meter a las personas en el entorno, pero y 
-    si solo miramos las personas de la lista de personas
-    de la poblacion en ved de mirar toda la matriz? Solo haria 
-    falta un atributo extra dentro de persona que indique en que
-    posicion de la matriz se encuentra en cada momento. De manera 
-    que el entorno sea algo simbolico pero no necesario. Solo nos 
-    interesaria cambiar los atributos de las personas dentro del 
-    entorno si lo dibujaramos,pero si no hacemos ese opcional, 
-    daria absolutamente igual, y nos ahorrariamos espacio
-    y aumentariamos eficiencia. Creo yo vamos.
-    ------------------------------------------------------------*/
-    for (i = 0; i < size; i++)
+    int id_contIAux, id_contNotIAux, vaccines_left;
+    for (k = 0; k < iterations; k++) // ITERACCIONES
     {
-        //Mirar a ver si es infectado, y en ese caso mirar a ver si hay alguien en su radio de contagio
-        estado = personList[i];
-        if (estado == 1 || estado == 2)
+        id_contIAux = id_contI;
+        id_contNotIAux = id_contNotI;
+        vaccines_left = num_persons_to_vaccine;
+        for (i = 0; i < id_contIAux; i++) // INFECTED
         {
-            //Lo primero es mirar a ver si se ha recuperado para cambiarle de estado a recuperado.
-            if (personList[i].recovery == 0)
-            {
-
-                changeEstate(i, 3);
-                personList[i].recovery = recovery_period;
-
-            } //Si no se ha recuperado, le resto uno el periodo de recuperacion que le queda.
-            else if (personList[i].recovery != 0)
-            {
-
-                personList[i].recovery -= 1;
-            }
-            //Miramos la probabilidad de muerte, para saber si darlo por muerto o no. Si la probabilidad es mayor que 0.7 lo damos por muerto.
-            //De esta manera lo miramos cada ciclo que siga siendo infectado y siempre va a dar el mismo resultado, como hacer para mirarlo una vez?
-            else if (personList[i].prob_death >= 0.7)
-            {
-
-                changeEstate(i, 5);
-            }
-            else if (personList[i].periodo_incu != 0)
-            { //Miramos a ver si el infectado es contagioso
-
-                personList[i].periodo_incu -= 1;
-            }
-            else
-            {
-                //miramos la probabilidad de contagio de esta persona. SI es por encima de 0.7 entonces contagia, si no, nada.
-                if (prob_infection >= 0.7)
-                    propagate(i);
-            }
+            changeState(&l_person_infected[i]);
+            move(&l_person_infected[i]);
         }
-        //Ahora lo muevo
-        move(i);
-        //Una vez que ya lo he movido, calculo las nuevas coordenadas.
-        changeCoordenates(i);
-    }
-}
-
-void changeEstate(int index_person, int new_state)
-{
-
-    personList[i].state = new_state;
-}
-
-void changeCoordenates(int index_person)
-{
-
-    //No hacer hasta responder las dudas del principio del docuemento.
-}
-
-void move(int index_person)
-{
-
-    //No hacer hasta responder las dudas del principio del documento
-}
-
-void propagate(int index_person)
-{
-    //Ahora tengo que mirar arriba,abajo,izquierda,derecha. Tengo que tener en cuenta los limites de la matriz
-    fila = personList[i] / size_world;
-    columna = personList[i] % size_world;
-    //En ved de un bucle poner las cuatro posibilidades
-    for (j = fila; j < fila + 2; j++)
-    {
-        for (k = columna; k < columhna + 2; k++)
+        for (i = 0; i < id_contNotIAux; i++) // NOT-INFECTED Y VACCINED
         {
-            if ((columna + 1) <= size_world)
+            if (vaccines_left > 0)
             {
-
-                if (person_List[(filea * size_world) + columna + 1].state == 0 || person_List[(filea * size_world) + columna + 1].state == 3)
-                {
-
-                    changeEstate(i, contagiado); //No hay un estado de contagiado, que le ponemos estado 1 o estado 2. O lo hacemos random
-                }
+                vaccine(&l_person_notinfected[i]);
+            }
+            move(&l_person_notinfected[i]);
+            if (i <= id_contVaccined)
+            {
+                move(&l_vaccined[i]);
             }
         }
     }
+}
+
+void changeState(person_t *person) // 1 and 2 States
+{
+    int state = person->state;
+    if (person->incubation_period > 0)
+    {
+        person->incubation_period--;
+    }
+    else
+    {
+        if (person->recovery == 0)
+        {
+            person->state = 3;
+            person->incubation_period = random_number(3, 5); // TODO: Cambiar esto
+            person->recovery = random_number(3, 5);
+        }
+        else
+        {
+            person->recovery--;
+            if (person->state == 1)
+            {
+                propagate(person);
+            }
+        }
+    }
+}
+
+void propagate(person_t *person)
+{
+    int x = person->coord[0];
+    int y = person->coord[1];
+    for (i = 0; i < 5; i++)
+    {
+        world[x + i - 2, y];
+    }
+    for (i = 0; i < 5; i++)
+    {
+        world[x, y + i - 2];
+    }
+    for (i = 0; i < 3; i++)
+    {
+        world[x + i - 1, y + i - 1];
+    }
+    world[x + 1, y - 1];
+    world[x - 1, y + 1];
 }

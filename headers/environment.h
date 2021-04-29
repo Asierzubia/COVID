@@ -1,10 +1,19 @@
 #ifndef ENVIRONMENT_H
 #define ENVIRONMENT_H
 
-int size_world;
-person_t *world;
+#define size_world 10 // un lado
+#define iterations 1000 
+
+enum list {INFECTED, NOT_INFECTED, VACCINED};
+
+typedef struct index {
+    int id; // index
+    enum list l; 
+} index_t;
+
+index_t *world;
 
 void init_world();
-void create_enviroment();
+void move(person_t *person);
 
 #endif // ENVIRONMENT_H
