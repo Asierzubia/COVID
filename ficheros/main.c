@@ -84,20 +84,24 @@ void changeState(person_t *person) // 1 and 2 States
 
 void propagate(person_t *person)
 {
+    int directions[12][2] = {{1, 1}, {2, 1}, {1, 2}, {2, 2}, {-1, -1}, {-1, -2}, {-2, -1}, {-2 - 2}, {0, 1}, {0, 2}, {1, 0}, {2, 0}};
+    index_t index_aux;
     int x = person->coord[0];
     int y = person->coord[1];
-    for (i = 0; i < 5; i++)
+    int posX, posY;
+    person_t person_target;
+    for (i = 0; i < 12; i++)
     {
-        world[x + i - 2, y];
+        posX = x + directions[i][0];
+        posY = y + directions[i][1];
+        if (posX <= size_world && posY <= size_world)
+        {
+            index_aux = world[posX, posY];
+            // TODO: MIRAR SI ES VACIO
+            if (index_aux.l=NOT_INFECTED)
+            {
+                l_person_notinfected[index_aux.id];
+            }
+        }
     }
-    for (i = 0; i < 5; i++)
-    {
-        world[x, y + i - 2];
-    }
-    for (i = 0; i < 3; i++)
-    {
-        world[x + i - 1, y + i - 1];
-    }
-    world[x + 1, y - 1];
-    world[x - 1, y + 1];
 }
