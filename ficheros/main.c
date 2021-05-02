@@ -68,7 +68,6 @@ void per_cicle()
                 move(&l_vaccined[i]);
             }
         }
-
         idx_iter++;
     }
 }
@@ -109,7 +108,7 @@ void propagate(person_t *person)
     float prob_aux;
     for (i = 0; i < 12; i++)
     {
-        index = world[x + directions[i][0], y + directions[i][1]];
+        index = world[x + directions[i][0]][ y + directions[i][1]];
         if (index.l == NOT_INFECTED)
         {
             person_aux = l_person_notinfected[index.id];

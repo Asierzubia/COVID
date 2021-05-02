@@ -1,4 +1,7 @@
 #include "vaccine.h"
+#include "environment.h"
+#include "person.h"
+#include "population.h"
 
 percent = 0.7;
 percent = 0.7;

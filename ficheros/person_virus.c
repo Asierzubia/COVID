@@ -36,7 +36,7 @@ person_t create_person()
     }
     index.id = person.id;
     
-    world[person.coord[0],person.coord[1]] = index; // INTRODUCIDO EN WORLD
+    world[person.coord[0]][person.coord[1]] = index; // INTRODUCIDO EN WORLD
     gsl_rng_free(r);
     calculate_init_position(person);
     return person;
