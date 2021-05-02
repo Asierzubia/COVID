@@ -17,7 +17,8 @@ person_t create_person()
     person.prob_death = calculate_prob_death(person.age);
     person.state = random_number(0,3); 
     person.incubation_period = recovery_period;          
-    person.recovery = recovery_period;               
+    person.recovery = recovery_period;
+    //Falta Samplear array Speed               
     index_t index;
     if (person.state == 0 || person.state == 3) // SANO
     {

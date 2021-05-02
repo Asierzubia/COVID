@@ -22,20 +22,25 @@ int main(int argc, char *argv[])
     create_population();
     per_cicle();
 }
-
-//-------------DUDAS-----------------------------------------
-//Las personas recuperadas se pueden volver a contagiar??????
-//Que estado le ponemos a una persona contiagiosa, estado con sintomas o sin sintomas.
-//Que sentido tienes que toda la poblacion tenga la misma probabilidad de moverse? No sera que cada persona tiene una probabilidad de moverse? Porque sino habria cilcos en los que se mueven todas las personas, y otros en los que no se moveria ninguna.
+//////-------------NUEVO-----------------------/////
+int when_change_group = iterations/group_to_vaccine; //Para saber cada cuantas iteraciones tengo que cambiar de grupo
+int cont_iterations = 0;
 
 void per_cicle()
 {
     int id_contIAux, id_contNotIAux, vaccines_left;
+    idx_iter=0;
     for (k = 0; k < iterations; k++) // ITERACCIONES
     {
+        //NUEVO ----- VACUNACION-------------------
+        if(cont_iterations >= when_change_group) {
+            group_to_vaccine--;
+            cont_iterations=0;
+        }else cont_iterations++;
+        ///-------------END VACUNAICON-------------
+        vaccines_left = num_person_to_vaccine;
         id_contIAux = id_contI;
         id_contNotIAux = id_contNotI;
-        vaccines_left = num_persons_to_vaccine;
         for (i = 0; i < id_contIAux; i++) // INFECTED
         {
             changeState(&l_person_infected[i]);
@@ -45,7 +50,7 @@ void per_cicle()
         {
             if (vaccines_left > 0)
             {
-                vaccine(&l_person_notinfected[i]);
+                vaccines_left = vaccine(&l_person_notinfected[i],vaccines_left);
             }
             move(&l_person_notinfected[i]);
             if (i <= id_contVaccined)
@@ -53,6 +58,7 @@ void per_cicle()
                 move(&l_vaccined[i]);
             }
         }
+        idx_iter++;
     }
 }
 
@@ -84,24 +90,14 @@ void changeState(person_t *person) // 1 and 2 States
 
 void propagate(person_t *person)
 {
-    int directions[12][2] = {{1, 1}, {2, 1}, {1, 2}, {2, 2}, {-1, -1}, {-1, -2}, {-2, -1}, {-2 - 2}, {0, 1}, {0, 2}, {1, 0}, {2, 0}};
-    index_t index_aux;
+
+    int directions[12][2] = {{1,1},{2,1},{1,2},{2,2},{-1,-1},{-1,-2},{-2,-1},{-2-2},{0,1},{0,2},{1,0},{2,0}};
+    index_i i;
     int x = person->coord[0];
     int y = person->coord[1];
-    int posX, posY;
-    person_t person_target;
     for (i = 0; i < 12; i++)
     {
-        posX = x + directions[i][0];
-        posY = y + directions[i][1];
-        if (posX <= size_world && posY <= size_world)
-        {
-            index_aux = world[posX, posY];
-            // TODO: MIRAR SI ES VACIO
-            if (index_aux.l=NOT_INFECTED)
-            {
-                l_person_notinfected[index_aux.id];
-            }
-        }
+       i = world[x+directions[i][0],y+directions[i][1]];
     }
+
 }

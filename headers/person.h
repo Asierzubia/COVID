@@ -5,7 +5,7 @@ typedef struct person {
     int age;
     int state;
     float prob_death;
-    int coord[2];
+    int coord[2]; 
     int speed[2];
     int incubation_period; 
     int recovery;
