@@ -27,13 +27,24 @@ void init_lists()
     l_vaccined = (person_t *)malloc(population_size * sizeof(person_t));
 }
 
-void calculate_probs()
-{
+// void calculate_probs()
+// {
+//     init_gsl();
+//     prob_infection = gsl_ran_beta(r, alfa, beta);
+//     recovery_period = random_number(1, MAX_RECOVERY);
+//     prob_direction = gsl_ran_beta(r, alfa, beta);
+//     prob_speed = gsl_ran_beta(r, alfa, beta);
+//     gsl_rng_free(r);
+// }
+
+void change_move_prob(person_t *person) {
+    person->speed[0] = random_number(0,MAX_DIRECTION);
+    person->speed[1] = random_number(0,MAX_SPEED);
+}
+
+void change_infection_prob(person_t *person) {
     init_gsl();
-    prob_infection = gsl_ran_beta(r, alfa, beta);
-    recovery_period = random_number(3, 5);
-    prob_direction = gsl_ran_beta(r, alfa, beta);
-    prob_speed = gsl_ran_beta(r, alfa, beta);
+    person->prob_infection = gsl_ran_beta(r,alfa,beta);
     gsl_rng_free(r);
 }
 
@@ -48,7 +59,6 @@ void create_population()
     init_lista();
     //Calculo las probabilidades y la edad media
     calculate_ageMean();
-    calculate_probs();
     //Relleno la lista con personas
     for (int i = 0; i < population_size; i++)
     {
