@@ -2,15 +2,15 @@
 #define DEFINITIONS_H
 
 
-#define size_world 5
+#define size_world 3
 #define percent 0.1
 #define MAX_SPEED 2     
 #define MAX_DIRECTION 8 
-#define MAX_INCUBATION 15 
+#define MAX_INCUBATION 5 
 #define MAX_RECOVERY 10
 #define MAX_INFECTION 0.001 //0.6
 #define MAX_DEATH 200
-#define population_size 10
+#define population_size 5
 
 
 int iter;
@@ -75,5 +75,5 @@ int vacunate(person_t person,int vaccines);
 void calculate_init_position(person_t *person);
 int random_number(int min_num, int max_num);
 void print_world();
-
+void print_person(person_t person);
 #endif // DEFINITIONS_H

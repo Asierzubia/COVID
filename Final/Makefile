@@ -4,7 +4,7 @@ HEADER	= definitions.h
 OUT	= covid.out
 CC	 = gcc
 FLAGS	 = -g -c -Wall
-LFLAGS	 = -lm -lgsl
+LFLAGS	 = -lm -lgsl -lgslcblas
 
 all: $(OBJS)
 	$(CC) -g $(OBJS) -o $(OUT) $(LFLAGS)

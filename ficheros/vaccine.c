@@ -18,6 +18,5 @@ int vacunate(person_t person,int vaccines_left_t){
         person_vaccinned++;
         return vaccines_left_t--;
     }
-    
     return vaccines_left_t;
 }
