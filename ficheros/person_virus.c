@@ -2,8 +2,8 @@
 #include "probability.h"
 #include "environment.h"
 #include "population.h"
-#include "gsl/gsl/gsl_randist.h"
-#include "gsl/gsl/gsl_rng.h"
+#include "../gsl/gsl/gsl_randist.h"
+#include "../gsl/gsl/gsl_rng.h"
 
 id_contI = 0;
 id_contNotI = 0;
@@ -14,11 +14,11 @@ person_t create_person()
     person_t person;
     init_gsl();
     person.age = (int)gsl_ran_beta(r, alfa, beta); 
-    person.prob_death = calculate_prob_death(person.age);
+    person.prob_infection = gsl_ran_beta(r, alfa, beta);
     person.state = random_number(0,3); 
-    person.incubation_period = recovery_period;          
-    person.recovery = recovery_period;
-    //Falta Samplear array Speed               
+    person.incubation_period = random_number(0,MAX_INCUBATION);          
+    person.recovery = random_number(0,MAX_RECOVERY);
+
     index_t index;
     if (person.state == 0 || person.state == 3) // SANO
     {
@@ -36,7 +36,7 @@ person_t create_person()
     }
     index.id = person.id;
     
-    world[person.coord[0],person.coord[1]] = index; // INTRODUCIDO EN WORLD
+    world[person.coord[0]][person.coord[1]] = index; // INTRODUCIDO EN WORLD
     gsl_rng_free(r);
     calculate_init_position(person);
     return person;

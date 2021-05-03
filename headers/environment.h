@@ -12,7 +12,7 @@ typedef struct index {
     enum list l; 
 } index_t;
 
-index_t *world;
+index_t **world;
 
 void init_world();
 void move(person_t *person);
