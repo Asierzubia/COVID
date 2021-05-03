@@ -2,16 +2,16 @@
 #define DEFINITIONS_H
 
 
-#define size_world 3
+#define size_world 10
 #define percent 0.1
 #define MAX_SPEED 2     
 #define MAX_DIRECTION 8 
 #define MAX_INCUBATION 5 
 #define MAX_RECOVERY 10
-#define MAX_INFECTION 0.001 //0.6
+#define MAX_INFECTION 0.3 //0.6
 #define MAX_DEATH 200
 #define population_size 5
-
+#define BATCH 2
 
 int iter;
 int posX;
@@ -34,9 +34,11 @@ float prob_direction;
 float prob_speed;
 int id_contVaccined;
 int idx_iter;
-
+int cont_bach;
 int id_contI;
 int id_contNotI;
+int cont_death;
+int c_death_aux, c_healthy_aux, c_recovered_aux, c_infected_aux, RO; 
 enum list {INFECTED, NOT_INFECTED, VACCINED};
 
 typedef struct index {
@@ -76,4 +78,5 @@ void calculate_init_position(person_t *person);
 int random_number(int min_num, int max_num);
 void print_world();
 void print_person(person_t person);
+void metrics();
 #endif // DEFINITIONS_H

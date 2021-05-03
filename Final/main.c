@@ -12,6 +12,7 @@
 
 int main(int argc, char *argv[])
 {
+    init_gsl();
     printf("EMPIEZA EL JUEGO DE LA PURGA\n");
     id_contI = 0;
     id_contNotI = 0;
@@ -26,11 +27,14 @@ int main(int argc, char *argv[])
     iter = 10;
     posX = 0;
     posY = 0;
+    cont_bach = 1;
+    cont_death = 0;;
     init_world();
     printf("INIT BIEN\n");
     create_population();
     printf("INIT BIEN 2\n");
     per_cicle();
+    gsl_rng_free(r);
 }
 
 void per_cicle()
@@ -38,10 +42,9 @@ void per_cicle()
     int id_contIAux, id_contNotIAux, vaccines_left;
     int when_change_group = 50; //Para saber cada cuantas iteraciones tengo que cambiar de grupo
     int cont_iterations = 0;
-    idx_iter = 0;
     for (k = 0; k < iter; k++) // ITERACCIONES
     {
-        printf("ITERACION --> %d\n", k);
+        printf("--------------------------------ITERACION --> %d--------------------------------\n", k);
         print_world();
         //NUEVO ----- VACUNACION-------------------
         if (cont_iterations >= when_change_group)
@@ -55,12 +58,14 @@ void per_cicle()
         vaccines_left = num_persons_to_vaccine;
         id_contIAux = id_contI;
         id_contNotIAux = id_contNotI;
-
         for (i = 0; i < id_contIAux; i++) // INFECTED
         {
-            change_state(&l_person_infected[i]);
-            change_move_prob(&l_person_infected[i]);
-            move(&l_person_infected[i]);
+            if (l_person_infected[i].id != -1) 
+            {
+                change_state(&l_person_infected[i]);
+                change_move_prob(&l_person_infected[i]);
+                move(&l_person_infected[i]);
+            }
         }
 
         for (i = 0; i < id_contNotIAux; i++) // NOT-INFECTED Y VACCINED
@@ -80,9 +85,19 @@ void per_cicle()
                 move(&l_vaccined[i]);
             }
         }
-        idx_iter++;
         print_world();
+        if (cont_bach == BATCH)
+        {
+            cont_bach = 1;
+            //smetrics();
+        }else{
+            cont_bach++;
+        }
+        
     }
+}
+
+void metrics() {
 }
 
 void change_state(person_t *person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
@@ -97,7 +112,7 @@ void change_state(person_t *person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
         {
             person->state = 3;
             person->incubation_period = random_number(3, 5); // TODO: Cambiar esto
-            person->recovery = random_number(3, 5); // TODO: METER EN VACUNADOS
+            person->recovery = random_number(3, 5);          // TODO: METER EN VACUNADOS
         }
         else
         {
@@ -112,7 +127,7 @@ void change_state(person_t *person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
 
 void propagate(person_t *person)
 {
-    int directions[12][2] = {{1, 1}, {2, 1}, {1, 2}, {2, 2}, {-1, -1}, {-1, -2}, {-2, -1}, {-2 - 2}, {0, 1}, {0, 2}, {1, 0}, {2, 0}};
+    int directions[12][2] = {{1, 0}, {2, 0}, {1, 1}, {0, 1}, {0, 2}, {-1, 1}, {-1, 0}, {-2, 0}, {-1, -1}, {0, -1}, {0, -2}, {1, -1}};
     index_t index;
     int x = person->coord[0];
     int y = person->coord[1];
@@ -126,21 +141,21 @@ void propagate(person_t *person)
             index = world[x + directions[i][0]][y + directions[i][1]];
             if (index.id != -1 && index.l == NOT_INFECTED)
             {
-                printf("SE HA INFECTADO 1\n");
                 person_aux = l_person_notinfected[index.id];
                 change_infection_prob(&person_aux);
                 if (person_aux.prob_infection > MAX_INFECTION)
                 {
-                    printf("SE HA INFECTADO 2\n");
                     prob_aux = 1000 * calculate_prob_death(person_aux.age);
                     if (random_number(0, MAX_DEATH) <= prob_aux)
                     { // MUERE
+                        printf(">>>>>%d HA MUERTO!\n", person_aux.id);
                         person_aux.state = 5;
                         world[x + directions[i][0]][y + directions[i][1]].id = -1;
+                        cont_death++;
                     }
                     else
                     {
-                        printf("SE HA INFECTADO 3\n");
+                        printf(">>>>>%d SE HA INFECTADO!\n", person_aux.id);
                         if (random_number(0, 1) == 0) // INFECCIOSO
                         {
                             person_aux.state = 2;
@@ -186,20 +201,23 @@ void move(person_t *person)
     if (speed != 0)
     {
         int direction = person->speed[0];
-        int directions[12][2] = {{1, 0}, {2, 0}, {1, 1}, {0, 1}, {0, 2}, {-1, 1}, {-1, 0}, {-2, 0}, {-1, -1}, {0, -1}, {0, -2}, {1, -1}};
+        printf("%d%d\n",speed,direction);
+        int diagonals[4][2] = {{-1, 1}, {-1, -1}, {1, -1}, {1, 1}};
+        int directions[8][2] = {{0, 1}, {0, 2}, {-1, 0}, {-2, 0}, {0, -1}, {0, -2}, {1, 0}, {2, 0}};
+        //int directions[12][2] = {{1, 0}, {2, 0}, {1, 1}, {0, 1}, {0, 2}, {-1, 1}, {-1, 0}, {-2, 0}, {-1, -1}, {0, -1}, {0, -2}, {1, -1}};
         if (direction == 2 || direction == 4 || direction == 6 || direction == 8) // DIAGONAL
         {
-            x += directions[direction + 1][0];
-            y += directions[direction + 1][1];
+            x += diagonals[(direction / 2) - 1][0];
+            y += diagonals[(direction / 2) - 1][1];
         }
         else
         {
-            x += directions[(direction - 1) + speed][0];
-            y += directions[(direction - 1) + speed][1];
+            x += directions[direction - 1 + speed - 1][0];
+            y += directions[direction - 1 + speed - 1][1];
         }
-        if (x < size_world && y < size_world)
+        if (x < size_world && y < size_world && x >= 0 && y >= 0)
         {
-            if (world[x][y].id != -1) // POS VACIA
+            if (world[x][y].id == -1) // EMPTY POSITION
             {
                 world[person->coord[0]][person->coord[1]].id = -1;
                 world[x][y].id = person->id;
@@ -215,6 +233,8 @@ void move(person_t *person)
                 {
                     world[x][y].l = VACCINED;
                 }
+                person->coord[0] = x;
+                person->coord[1] = y;
             }
         }
     }
@@ -224,13 +244,12 @@ void move(person_t *person)
 person_t create_person()
 {
     person_t person;
-    init_gsl();
-    person.age = (int)gsl_ran_beta(r, alfa, beta);
+    person.age = random_number(1, 100);
     person.prob_infection = gsl_ran_beta(r, alfa, beta);
     person.state = random_number(0, 2);
     person.incubation_period = random_number(0, MAX_INCUBATION);
     person.recovery = random_number(0, MAX_RECOVERY);
-    //printf("STATE --> %d\n", person.state);
+    calculate_init_position(&person);
     index_t index;
     if (person.state == 0 || person.state == 3) // SANO
     {
@@ -247,16 +266,15 @@ person_t create_person()
         index.l = INFECTED;
     }
     index.id = person.id;
-    calculate_init_position(&person);
     world[person.coord[0]][person.coord[1]] = index; // INTRODUCIDO EN WORLD
-    gsl_rng_free(r);
     print_person(person);
     return person;
 }
 
-void print_person(person_t p) {
+void print_person(person_t p)
+{
     printf("ID:%d|State:%d|Age:%d|Incubation:%d|InfectionProb:%6.4lf|Recovery:%d|Coord:[%d,%d]\n",
-    p.id,p.state,p.age,p.incubation_period,p.prob_infection,p.recovery,p.coord[0],p.coord[1]);
+           p.id, p.state, p.age, p.incubation_period, p.prob_infection, p.recovery, p.coord[0], p.coord[1]);
 }
 
 float calculate_prob_death(int edad)
@@ -277,9 +295,8 @@ float calculate_prob_death(int edad)
 
 int random_number(int min_num, int max_num)
 {
-    srand(time(0));
-    int result = rand() % (max_num + 1) + min_num;
-    return result;
+    srand(time(NULL));
+    return rand() % (max_num + 1) + min_num;
 }
 
 void calculate_init_position(person_t *person)
@@ -301,18 +318,9 @@ void init_gsl()
 {
     gsl_rng_env_setup();
     r = gsl_rng_alloc(gsl_rng_default);
+    seed = time(NULL);
     gsl_rng_set(r, seed);
 }
-
-// void calculate_probs()
-// {
-//     init_gsl();
-//     prob_infection = gsl_ran_beta(r, alfa, beta);
-//     recovery_period = random_number(1, MAX_RECOVERY);
-//     prob_direction = gsl_ran_beta(r, alfa, beta);
-//     prob_speed = gsl_ran_beta(r, alfa, beta);
-//     gsl_rng_free(r);
-// }
 
 void change_move_prob(person_t *person)
 {
@@ -322,9 +330,7 @@ void change_move_prob(person_t *person)
 
 void change_infection_prob(person_t *person)
 {
-    init_gsl();
     person->prob_infection = gsl_ran_beta(r, alfa, beta);
-    gsl_rng_free(r);
 }
 
 float calculate_ageMean()
@@ -383,7 +389,7 @@ void print_world()
             index_aux = world[i][j];
             if (index_aux.id == -1)
             {
-                printf("| - |");
+                printf("| --- |");
             }
             else
             {
@@ -393,7 +399,7 @@ void print_world()
                 }
                 else if (index_aux.l == NOT_INFECTED)
                 {
-                    printf("| NOT-%d |", index_aux.id);
+                    printf("| N-%d |", index_aux.id);
                 }
                 else
                 {
