@@ -23,66 +23,73 @@ int main(int argc, char *argv[])
     radius = 2;
     group_to_vaccine = 8;
     num_persons_to_vaccine = 70 / (population_size * percent);
-    person_vaccinned = 0;
     iter = 10;
     posX = 0;
     posY = 0;
     cont_bach = 1;
-    cont_death = 0;;
+    cont_death = 0;
+    vaccines_left = 0;
+    id_contVaccined = 0;
     init_world();
-    printf("INIT BIEN\n");
     create_population();
-    printf("INIT BIEN 2\n");
     per_cicle();
     gsl_rng_free(r);
 }
 
 void per_cicle()
 {
-    int id_contIAux, id_contNotIAux, vaccines_left;
+    int id_contIAux, id_contNotIAux, is_vaccined;
     int when_change_group = 50; //Para saber cada cuantas iteraciones tengo que cambiar de grupo
     int cont_iterations = 0;
     for (k = 0; k < iter; k++) // ITERACCIONES
     {
         printf("--------------------------------ITERACION --> %d--------------------------------\n", k);
         print_world();
-        //NUEVO ----- VACUNACION-------------------
         if (cont_iterations >= when_change_group)
         {
             group_to_vaccine--;
             cont_iterations = 0;
         }
         else
+        {
             cont_iterations++;
-        ///-------------END VACUNAICON-------------
+        }
         vaccines_left = num_persons_to_vaccine;
         id_contIAux = id_contI;
         id_contNotIAux = id_contNotI;
+
         for (i = 0; i < id_contIAux; i++) // INFECTED
         {
-            if (l_person_infected[i].id != -1) 
+            if (l_person_infected[i].id != -1)
             {
                 change_state(&l_person_infected[i]);
-                change_move_prob(&l_person_infected[i]);
-                move(&l_person_infected[i]);
+                if (l_person_infected[i].id != -1) // Ha cambiado de estado y no se mueve
+                {
+                    change_move_prob(&l_person_infected[i]);
+                    move(&l_person_infected[i]);
+                }
             }
         }
 
-        for (i = 0; i < id_contNotIAux; i++) // NOT-INFECTED Y VACCINED
+        for (i = 0; i < id_contVaccined; i++) // VACCINED
+        {
+            change_move_prob(&l_vaccined[i]);
+            move(&l_vaccined[i]);
+        }
+        
+        for (i = 0; i < id_contNotIAux; i++) // NOT-INFECTED 
         {
             if (l_person_notinfected[i].id != -1)
             {
                 if (vaccines_left > 0)
                 {
-                    vaccines_left = vacunate(l_person_notinfected[i], vaccines_left);
-                    change_move_prob(&l_person_notinfected[i]);
-                    move(&l_person_notinfected[i]);
+                    is_vaccined = vacunate(l_person_notinfected[i]);
+                    if (is_vaccined == 0) // NOT-VACCINED
+                    {
+                        change_move_prob(&l_vaccined[i]);
+                        move(&l_vaccined[i]);
+                    }
                 }
-            }
-            if (i <= id_contVaccined)
-            {
-                change_move_prob(&l_vaccined[i]);
-                move(&l_vaccined[i]);
             }
         }
         print_world();
@@ -90,14 +97,16 @@ void per_cicle()
         {
             cont_bach = 1;
             //smetrics();
-        }else{
+        }
+        else
+        {
             cont_bach++;
         }
-        
     }
 }
 
-void metrics() {
+void metrics()
+{
 }
 
 void change_state(person_t *person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
@@ -134,20 +143,21 @@ void propagate(person_t *person)
     person_t person_aux;
     float prob_aux;
     printf(">>>>>INFECTAR\n");
-    for (i = 0; i < 12; i++)
+    for (i = 0; i < 12; i++) // Todas las direcciones
     {
-        if ((x + directions[i][0]) < size_world && (y + directions[i][1]) < size_world)
+        if ((x + directions[i][0]) < size_world && (y + directions[i][1]) < size_world) // Mantenerse dentro
         {
             index = world[x + directions[i][0]][y + directions[i][1]];
-            if (index.id != -1 && index.l == NOT_INFECTED)
+            if (index.id != -1 && index.l == NOT_INFECTED) // Persona no infectada y asignada
             {
                 person_aux = l_person_notinfected[index.id];
                 change_infection_prob(&person_aux);
-                if (person_aux.prob_infection > MAX_INFECTION)
+                if (person_aux.prob_infection > MAX_INFECTION) // Se infecta
                 {
+                    l_person_notinfected[person_aux.id].id = -1;
                     prob_aux = 1000 * calculate_prob_death(person_aux.age);
-                    if (random_number(0, MAX_DEATH) <= prob_aux)
-                    { // MUERE
+                    if (random_number(0, MAX_DEATH) <= prob_aux) // MUERE
+                    {
                         printf(">>>>>%d HA MUERTO!\n", person_aux.id);
                         person_aux.state = 5;
                         world[x + directions[i][0]][y + directions[i][1]].id = -1;
@@ -164,14 +174,12 @@ void propagate(person_t *person)
                         {
                             person_aux.state = 1;
                         }
-                        id_contI++;
                         person_aux.id = id_contI;
                         l_person_infected[id_contI] = person_aux;
-                        index.l = INFECTED;
-                        index.id = id_contI;
-                        world[x + directions[i][0]][y + directions[i][1]] = index;
+                        world[x + directions[i][0]][y + directions[i][1]].l = INFECTED;
+                        world[x + directions[i][0]][y + directions[i][1]].id = id_contI;
+                        id_contI++;
                     }
-                    l_person_notinfected[person_aux.id].id = -1;
                 }
             }
         }
@@ -197,11 +205,11 @@ void move(person_t *person)
 {
     int x = person->coord[0];
     int y = person->coord[1];
-    int speed = person->speed[1];
+    int speed = 1;//person->speed[1];
     if (speed != 0)
     {
-        int direction = person->speed[0];
-        printf("%d%d\n",speed,direction);
+        int direction = 7;//person->speed[0];
+        //printf("%d%d\n",speed,direction);
         int diagonals[4][2] = {{-1, 1}, {-1, -1}, {1, -1}, {1, 1}};
         int directions[8][2] = {{0, 1}, {0, 2}, {-1, 0}, {-2, 0}, {0, -1}, {0, -2}, {1, 0}, {2, 0}};
         //int directions[12][2] = {{1, 0}, {2, 0}, {1, 1}, {0, 1}, {0, 2}, {-1, 1}, {-1, 0}, {-2, 0}, {-1, -1}, {0, -1}, {0, -2}, {1, -1}};
@@ -219,7 +227,7 @@ void move(person_t *person)
         {
             if (world[x][y].id == -1) // EMPTY POSITION
             {
-                world[person->coord[0]][person->coord[1]].id = -1;
+                world[person->coord[0]][person->coord[1]].id = -1; // Se elimina la anterior pos
                 world[x][y].id = person->id;
                 if (person->state == 1 || person->state == 2)
                 {
@@ -361,20 +369,22 @@ void init_lists()
 
 ////////----------------VACUNATE--------------////////////
 
-int vacunate(person_t person, int vaccines_left_t)
+int vacunate(person_t person)
 {
-
     if (person.age >= group_to_vaccine * 10)
     {
+        printf(">>>>>%d VACUNADO!\n",person.id);
+        l_person_notinfected[person.id].id = -1;
         person.state = 4;
         l_vaccined[id_contVaccined] = person;
+        world[person.coord[0]][person.coord[1]].l = VACCINED;
+        world[person.coord[0]][person.coord[1]].id = id_contVaccined;
         id_contVaccined++;
-        //TODO:Eliminar de la lista de no infectados a esa persona
-        person_vaccinned++;
-        return vaccines_left_t--;
+        return 1;
+    }else{
+        return 0; // no vacunado
     }
 
-    return vaccines_left_t;
 }
 
 void print_world()

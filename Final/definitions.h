@@ -10,7 +10,7 @@
 #define MAX_RECOVERY 10
 #define MAX_INFECTION 0.3 //0.6
 #define MAX_DEATH 200
-#define population_size 5
+#define population_size 15
 #define BATCH 2
 
 int iter;
@@ -39,6 +39,7 @@ int id_contI;
 int id_contNotI;
 int cont_death;
 int c_death_aux, c_healthy_aux, c_recovered_aux, c_infected_aux, RO; 
+int vaccines_left;
 enum list {INFECTED, NOT_INFECTED, VACCINED};
 
 typedef struct index {
@@ -73,7 +74,7 @@ void change_infection_prob(person_t *person);
 void init_world();
 float calculate_prob_death(int edad);
 void move(person_t *person);
-int vacunate(person_t person,int vaccines);
+int vacunate(person_t person);
 void calculate_init_position(person_t *person);
 int random_number(int min_num, int max_num);
 void print_world();
