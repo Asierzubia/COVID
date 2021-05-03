@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     beta = 5;
     radius = 2;
     group_to_vaccine = 8;
-    num_persons_to_vaccine = 70 / (population_size * percent);
+    num_persons_to_vaccine = 70 / (POPULATION_SIZE * percent);
     iter = 10;
     posX = 0;
     posY = 0;
@@ -132,7 +132,7 @@ void change_state(person_t person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
         else
         {
             l_person_infected[person.id].recovery--;
-            if (l_person_infected[person.id].state == 1)
+            if (l_person_infected[person.id].state == 2)
             {
                 propagate(&person);
             }
@@ -148,7 +148,7 @@ void propagate(person_t *person)
     int y = person->coord[1];
     person_t person_aux;
     float prob_aux;
-    printf(">>>>>INFECTAR\n");
+    //printf(">>>>>INFECTAR\n");
     for (i = 0; i < 12; i++) // Todas las direcciones
     {
         if ((x + directions[i][0]) < size_world && (y + directions[i][1]) < size_world) // Mantenerse dentro
@@ -359,7 +359,7 @@ void create_population()
     //Calculo las probabilidades y la edad media
     calculate_ageMean();
     //Relleno la lista con personas
-    for (int i = 0; i < population_size; i++)
+    for (int i = 0; i < POPULATION_SIZE; i++)
     {
         create_person();
         sleep(1);
@@ -368,9 +368,9 @@ void create_population()
 
 void init_lists()
 {
-    l_person_infected = (person_t *)malloc(population_size * sizeof(person_t));
-    l_person_notinfected = (person_t *)malloc(population_size * sizeof(person_t));
-    l_vaccined = (person_t *)malloc(population_size * sizeof(person_t));
+    l_person_infected = (person_t *)malloc(POPULATION_SIZE * sizeof(person_t));
+    l_person_notinfected = (person_t *)malloc(POPULATION_SIZE * sizeof(person_t));
+    l_vaccined = (person_t *)malloc(POPULATION_SIZE * sizeof(person_t));
 }
 
 ////////----------------VACUNATE--------------////////////

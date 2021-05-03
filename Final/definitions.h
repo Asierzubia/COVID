@@ -10,7 +10,7 @@
 #define MAX_RECOVERY 10
 #define MAX_INFECTION 0.3 //0.6
 #define MAX_DEATH 200
-#define population_size 7
+#define POPULATION_SIZE 10
 #define BATCH 2
 
 int iter;
