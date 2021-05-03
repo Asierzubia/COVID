@@ -62,7 +62,7 @@ void per_cicle()
         {
             if (l_person_infected[i].id != -1)
             {
-                change_state(&l_person_infected[i]);
+                change_state(l_person_infected[i]);
                 if (l_person_infected[i].id != -1) // Ha cambiado de estado y no se mueve
                 {
                     change_move_prob(&l_person_infected[i]);
@@ -86,9 +86,12 @@ void per_cicle()
                     is_vaccined = vacunate(l_person_notinfected[i]);
                     if (is_vaccined == 0) // NOT-VACCINED
                     {
-                        change_move_prob(&l_vaccined[i]);
-                        move(&l_vaccined[i]);
+                        change_move_prob(&l_person_notinfected[i]);
+                        move(&l_person_notinfected[i]);
                     }
+                }else{
+                    change_move_prob(&l_person_notinfected[i]);
+                    move(&l_person_notinfected[i]);
                 }
             }
         }
@@ -109,26 +112,29 @@ void metrics()
 {
 }
 
-void change_state(person_t *person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
+void change_state(person_t person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
 {
-    if (person->incubation_period > 0)
+    if (person.incubation_period > 0)
     {
-        person->incubation_period--;
+        l_person_infected[person.id].incubation_period--;
     }
     else
     {
-        if (person->recovery == 0)
+        if (person.recovery == 0)
         {
-            person->state = 3;
-            person->incubation_period = random_number(3, 5); // TODO: Cambiar esto
-            person->recovery = random_number(3, 5);          // TODO: METER EN VACUNADOS
+            l_person_infected[person.id].state = 3;
+            l_person_infected[person.id].incubation_period = random_number(3, 5);
+            l_person_infected[person.id].recovery = random_number(3, 5);
+            l_person_infected[person.id].id = -1;         
+            l_vaccined[id_contVaccined] = person; 
+            id_contVaccined++;
         }
         else
         {
-            person->recovery--;
-            if (person->state == 1)
+            l_person_infected[person.id].recovery--;
+            if (l_person_infected[person.id].state == 1)
             {
-                propagate(person);
+                propagate(&person);
             }
         }
     }

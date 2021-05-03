@@ -10,7 +10,7 @@
 #define MAX_RECOVERY 10
 #define MAX_INFECTION 0.3 //0.6
 #define MAX_DEATH 200
-#define population_size 15
+#define population_size 7
 #define BATCH 2
 
 int iter;
@@ -63,7 +63,7 @@ index_t world[size_world][size_world];
 person_t create_person();
 person_t *l_person_infected, *l_person_notinfected, *l_vaccined;
 void per_cicle();
-void change_state(person_t *person);
+void change_state(person_t person);
 void propagate(person_t *person);
 void init_lists();
 void init_gsl();
