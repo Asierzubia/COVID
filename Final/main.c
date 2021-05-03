@@ -30,6 +30,27 @@ int main(int argc, char *argv[])
     cont_death = 0;
     vaccines_left = 0;
     id_contVaccined = 0;
+    //-----Matricas---/
+    bach = 2;
+    cont_bach = 1;
+    sanas = id_contNotI;
+    contagiadas = id_contI;
+    fallecidas = 0;
+    recuperadas = 0;
+    RO = 0;
+    num_bach= 0;
+    mean_death = 0.0;
+    mean_infected = 0.0;
+    mean_recovered = 0.0;
+    mean_healthy = 0.0;
+    mean_RO = 0;
+
+    p_death = 0;
+    p_infected = 0;
+    p_recovered = 0;
+    p_healthy = 0;
+    p_RO = 0;
+    ///----Matricas---///
     init_world();
     create_population();
     per_cicle();
@@ -99,7 +120,7 @@ void per_cicle()
         if (cont_bach == BATCH)
         {
             cont_bach = 1;
-            //smetrics();
+            //calculate_metrics();
         }
         else
         {
@@ -148,7 +169,6 @@ void propagate(person_t *person)
     int y = person->coord[1];
     person_t person_aux;
     float prob_aux;
-    //printf(">>>>>INFECTAR\n");
     for (i = 0; i < 12; i++) // Todas las direcciones
     {
         if ((x + directions[i][0]) < size_world && (y + directions[i][1]) < size_world) // Mantenerse dentro
@@ -211,14 +231,12 @@ void move(person_t *person)
 {
     int x = person->coord[0];
     int y = person->coord[1];
-    int speed = 1;//person->speed[1];
+    int speed = person->speed[1];
     if (speed != 0)
     {
-        int direction = 7;//person->speed[0];
-        //printf("%d%d\n",speed,direction);
+        int direction = person->speed[0];
         int diagonals[4][2] = {{-1, 1}, {-1, -1}, {1, -1}, {1, 1}};
         int directions[8][2] = {{0, 1}, {0, 2}, {-1, 0}, {-2, 0}, {0, -1}, {0, -2}, {1, 0}, {2, 0}};
-        //int directions[12][2] = {{1, 0}, {2, 0}, {1, 1}, {0, 1}, {0, 2}, {-1, 1}, {-1, 0}, {-2, 0}, {-1, -1}, {0, -1}, {0, -2}, {1, -1}};
         if (direction == 2 || direction == 4 || direction == 6 || direction == 8) // DIAGONAL
         {
             x += diagonals[(direction / 2) - 1][0];
@@ -315,7 +333,6 @@ int random_number(int min_num, int max_num)
 
 void calculate_init_position(person_t *person)
 {
-    // TODO: Cambiar esto para que sea con el random_number
     person->coord[0] = posX; // coord x
     person->coord[1] = posY; // coord y
     posY++;
@@ -354,11 +371,8 @@ float calculate_ageMean()
 
 void create_population()
 {
-    //Inicializo la lista
     init_lists();
-    //Calculo las probabilidades y la edad media
     calculate_ageMean();
-    //Relleno la lista con personas
     for (int i = 0; i < POPULATION_SIZE; i++)
     {
         create_person();
@@ -426,4 +440,64 @@ void print_world()
         printf("\n");
     }
     printf("\n\n\n\n");
+}
+
+
+
+void calculate_metrics(){
+
+    mean_death = (p_death + fallecidas) / num_bach;
+    mean_infected = (p_infected + contagiadas) / num_bach;
+    mean_recovered = (p_recovered + recuperadas) / num_bach;
+    mean_healthy = (p_healthy + sanas) / num_bach;
+    mean_RO = (p_RO + (RO/num_bach)) / num_bach;
+
+    p_death = fallecidas;
+    p_infected = contagiadas;
+    p_recovered = recuperadas;
+    p_healthy = sanas;
+    p_RO = RO;
+    
+    fallecidas = 0;
+    RO = 0;
+
+    //Escribir en el fichero
+    FILE *fichero;
+    char nombre_fichero[] = "COVID.matricas";
+    fichero = fopen(nombre_fichero, "w");
+    if (fichero == NULL)
+    {
+        printf("El fichero no se ha podido abrir para escritura.\n");
+    }
+    // Se escribe en bloque los elementos del vector.
+    char linea[500] = "Numero Bach --> ";
+    char aux_linea[30] = " Media muertos --> ";
+    char aux[20];
+    sprintf(aux, "%d", num_bach);
+    strcat(linea,aux);
+    strcat(linea,aux_linea);
+    sprintf(aux, "%d", mean_death);
+    strcat(linea,aux);
+    char aux_linea_e[30] = " Media sanos --> ";
+    strcat(linea,aux_linea_e);
+    sprintf(aux, "%d", mean_healthy);
+    strcat(linea,aux);
+    char aux_linea_r[30] = " Media recuperados --> ";
+    strcat(linea,aux_linea_r);
+    sprintf(aux, "%d", mean_recovered);
+    strcat(linea,aux);
+    char aux_linea_t[30] = " Media contagiados --> ";
+    strcat(linea,aux_linea_t);
+    sprintf(aux, "%d", mean_infected);
+    strcat(linea,aux);
+    char aux_linea_y[30] = " Media RO --> ";
+    strcat(linea,aux_linea_y);
+    sprintf(aux, "%d", mean_RO);
+    strcat(linea,aux);
+
+    fwrite(linea, sizeof(char), 500, fichero);
+    if (fclose(fichero)!=0)
+    {
+        printf("No se ha podido cerrar el fichero.\n");
+    }
 }

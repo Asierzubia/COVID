@@ -13,33 +13,18 @@
 #define POPULATION_SIZE 10
 #define BATCH 2
 
-int iter;
-int posX;
-int posY;
-float l_death_prob[9] = {0.0, 0.002, 0.002, 0.002 , 0.004, 0.013, 0.036, 0.08, 0.148};
-int i, j, k,position;
-int seed;
-int mu;
-int alfa;
-int beta;
 gsl_rng *r;
-int num_persons_to_vaccine;
-int group_to_vaccine;
-int person_vaccinned;
-float age_mean;
-int radius;
-float prob_infection;
-float recovery_period;
-float prob_direction;
-float prob_speed;
-int id_contVaccined;
-int idx_iter;
-int cont_bach;
-int id_contI;
-int id_contNotI;
-int cont_death;
-int c_death_aux, c_healthy_aux, c_recovered_aux, c_infected_aux, RO; 
-int vaccines_left;
+
+float l_death_prob[9] = {0.0, 0.002, 0.002, 0.002 , 0.004, 0.013, 0.036, 0.08, 0.148};
+float age_mean,prob_infection,recovery_period,prob_direction,prob_speed;
+float mean_death,mean_infected,mean_recovered,mean_healthy,mean_RO;
+
+int iter,posX,posY,i,j,k,position,seed,mu,alfa,beta;
+int num_persons_to_vaccine,group_to_vaccine,person_vaccinned,radius,vaccines_left;
+int id_contVaccined,idx_iter,cont_bach,id_contI,id_contNotI,cont_death,c_death_aux, c_healthy_aux, c_recovered_aux, c_infected_aux, RO;
+int bach,cont_bach,sanas,contagiadas,fallecidas,recuperadas,RO,num_bach;
+int p_death,p_infected,p_recovered,p_healthy,p_RO;
+
 enum list {INFECTED, NOT_INFECTED, VACCINED};
 
 typedef struct index {
@@ -62,22 +47,28 @@ typedef struct person {
 index_t world[size_world][size_world];
 person_t create_person();
 person_t *l_person_infected, *l_person_notinfected, *l_vaccined;
+
+
 void per_cicle();
 void change_state(person_t person);
 void propagate(person_t *person);
 void init_lists();
 void init_gsl();
-float calculate_ageMean();
 void create_population();
 void change_move_prob(person_t *person);
 void change_infection_prob(person_t *person);
 void init_world();
-float calculate_prob_death(int edad);
 void move(person_t *person);
-int vacunate(person_t person);
 void calculate_init_position(person_t *person);
-int random_number(int min_num, int max_num);
 void print_world();
 void print_person(person_t person);
-void metrics();
+void calculate_metrics();
+
+float calculate_ageMean();
+float calculate_prob_death(int edad);
+int vacunate(person_t person);
+int random_number(int min_num, int max_num);
+
+
+
 #endif // DEFINITIONS_H
