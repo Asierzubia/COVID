@@ -3,12 +3,11 @@
 #include <string.h>
 #include <time.h>
 #include <stdbool.h>
-#include <unistd.h> // notice this! you need it!
+#include <unistd.h> 
 #include <math.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
 #include "definitions.h"
-///----VAriables-//
 
 int main(int argc, char *argv[])
 {
@@ -38,7 +37,7 @@ int main(int argc, char *argv[])
     fallecidas = 0;
     recuperadas = 0;
     RO = 0;
-    num_bach= 0;
+    num_bach = 0;
     mean_death = 0.0;
     mean_infected = 0.0;
     mean_recovered = 0.0;
@@ -97,8 +96,8 @@ void per_cicle()
             change_move_prob(&l_vaccined[i]);
             move(&l_vaccined[i]);
         }
-        
-        for (i = 0; i < id_contNotIAux; i++) // NOT-INFECTED 
+
+        for (i = 0; i < id_contNotIAux; i++) // NOT-INFECTED
         {
             if (l_person_notinfected[i].id != -1)
             {
@@ -110,7 +109,9 @@ void per_cicle()
                         change_move_prob(&l_person_notinfected[i]);
                         move(&l_person_notinfected[i]);
                     }
-                }else{
+                }
+                else
+                {
                     change_move_prob(&l_person_notinfected[i]);
                     move(&l_person_notinfected[i]);
                 }
@@ -146,8 +147,8 @@ void change_state(person_t person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
             l_person_infected[person.id].state = 3;
             l_person_infected[person.id].incubation_period = random_number(3, 5);
             l_person_infected[person.id].recovery = random_number(3, 5);
-            l_person_infected[person.id].id = -1;         
-            l_vaccined[id_contVaccined] = person; 
+            l_person_infected[person.id].id = -1;
+            l_vaccined[id_contVaccined] = person;
             id_contVaccined++;
         }
         else
@@ -393,7 +394,7 @@ int vacunate(person_t person)
 {
     if (person.age >= group_to_vaccine * 10)
     {
-        printf(">>>>>%d VACUNADO!\n",person.id);
+        printf(">>>>>%d VACUNADO!\n", person.id);
         l_person_notinfected[person.id].id = -1;
         person.state = 4;
         l_vaccined[id_contVaccined] = person;
@@ -401,10 +402,11 @@ int vacunate(person_t person)
         world[person.coord[0]][person.coord[1]].id = id_contVaccined;
         id_contVaccined++;
         return 1;
-    }else{
+    }
+    else
+    {
         return 0; // no vacunado
     }
-
 }
 
 void print_world()
@@ -442,22 +444,21 @@ void print_world()
     printf("\n\n\n\n");
 }
 
-
-
-void calculate_metrics(){
+void calculate_metrics()
+{
 
     mean_death = (p_death + fallecidas) / num_bach;
     mean_infected = (p_infected + contagiadas) / num_bach;
     mean_recovered = (p_recovered + recuperadas) / num_bach;
     mean_healthy = (p_healthy + sanas) / num_bach;
-    mean_RO = (p_RO + (RO/num_bach)) / num_bach;
+    mean_RO = (p_RO + (RO / num_bach)) / num_bach;
 
     p_death = fallecidas;
     p_infected = contagiadas;
     p_recovered = recuperadas;
     p_healthy = sanas;
     p_RO = RO;
-    
+
     fallecidas = 0;
     RO = 0;
 
@@ -474,29 +475,29 @@ void calculate_metrics(){
     char aux_linea[30] = " Media muertos --> ";
     char aux[20];
     sprintf(aux, "%d", num_bach);
-    strcat(linea,aux);
-    strcat(linea,aux_linea);
+    strcat(linea, aux);
+    strcat(linea, aux_linea);
     sprintf(aux, "%d", mean_death);
-    strcat(linea,aux);
+    strcat(linea, aux);
     char aux_linea_e[30] = " Media sanos --> ";
-    strcat(linea,aux_linea_e);
+    strcat(linea, aux_linea_e);
     sprintf(aux, "%d", mean_healthy);
-    strcat(linea,aux);
+    strcat(linea, aux);
     char aux_linea_r[30] = " Media recuperados --> ";
-    strcat(linea,aux_linea_r);
+    strcat(linea, aux_linea_r);
     sprintf(aux, "%d", mean_recovered);
-    strcat(linea,aux);
+    strcat(linea, aux);
     char aux_linea_t[30] = " Media contagiados --> ";
-    strcat(linea,aux_linea_t);
+    strcat(linea, aux_linea_t);
     sprintf(aux, "%d", mean_infected);
-    strcat(linea,aux);
+    strcat(linea, aux);
     char aux_linea_y[30] = " Media RO --> ";
-    strcat(linea,aux_linea_y);
+    strcat(linea, aux_linea_y);
     sprintf(aux, "%d", mean_RO);
-    strcat(linea,aux);
+    strcat(linea, aux);
 
     fwrite(linea, sizeof(char), 500, fichero);
-    if (fclose(fichero)!=0)
+    if (fclose(fichero) != 0)
     {
         printf("No se ha podido cerrar el fichero.\n");
     }
