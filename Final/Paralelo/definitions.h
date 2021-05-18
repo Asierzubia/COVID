@@ -1,7 +1,7 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 
-#define size_world 10
+#define size_world 30
 #define percent 0.1
 #define MAX_SPEED 2
 #define MAX_DIRECTION 8
@@ -24,8 +24,10 @@ enum list
 
 typedef struct index
 {
+
     int id; // index
     enum list l;
+
 } index_t;
 
 typedef struct person
@@ -38,9 +40,10 @@ typedef struct person
     int incubation_period;
     int recovery;
     int id;
+    int id_global;
 } person_t;
 
-void create_person(person_t *l_notInfected_p,person_t *l_infected_p, int procesador);
+void create_person(int procesador);
 //person_t *l_person_infected, *l_person_notinfected, *l_vaccined;
 
 void per_cicle();
@@ -48,7 +51,6 @@ void change_state(person_t person);
 void propagate(person_t *person);
 person_t *init_lists(int tamano);
 void init_gsl();
-void create_population(person_t *l_notInfected_p,person_t *l_infected_p, int procesador);
 void change_move_prob(person_t *person);
 void change_infection_prob(person_t *person);
 void init_world();
@@ -62,5 +64,5 @@ float calculate_ageMean();
 float calculate_prob_death(int edad);
 int vacunate(person_t person);
 int random_number(int min_num, int max_num);
-
+void realocate_lists();
 #endif // DEFINITIONS_H
