@@ -1,8 +1,8 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 
-#define size_world 30
-#define percent 0.1
+#define SIZE_WORLD 30
+#define PERCENT 0.05
 #define MAX_SPEED 2
 #define MAX_DIRECTION 8
 #define MAX_INCUBATION 5
@@ -12,8 +12,20 @@
 #define POPULATION_SIZE 10
 #define BATCH 2
 #define CUADRICULA 5
+#define ITER 50
+#define SEED 3
 
-//gsl_rng *r;
+
+/*Estructura para la parametrizacion*/
+
+typedef struct configuration_t {
+    unsigned int world_size;
+    unsigned int percent_t;
+    unsigned int population_size;
+    unsigned int batch;
+    unsigned int iter_t;
+    unsigned int seed;
+} configuration_t;
 
 enum list
 {
@@ -59,7 +71,7 @@ void calculate_init_position(person_t *person);
 void print_world();
 void print_person(person_t person,int procesador);
 void calculate_metrics();
-
+void init_person_parameters(person_t *persona,int estado);
 float calculate_ageMean();
 float calculate_prob_death(int edad);
 int vacunate(person_t person);

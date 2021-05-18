@@ -3,6 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <math.h>
+#include <gsl/gsl_randist.h> 
+#include <gsl/gsl_rng.h>
 #include "definitions.h"
 
 
@@ -10,8 +15,8 @@
   float age_mean, prob_infection, recovery_period, prob_direction, prob_speed;
   float mean_death, mean_infected, mean_recovered, mean_healthy, mean_RO;
   int identificador_global;
-  int iter, posX, posY, i, j, k, position, seed, mu, alfa, beta;
-  int num_persons_to_vaccine, group_to_vaccine, person_vaccinned, radius, vaccines_left;
+  int iter, posX, posY, i, j, k, position, seed, mu, alpha, beta;
+  int num_persons_to_vaccine, group_to_vaccine,when_change_group, person_vaccinned, radius, vaccines_left;
   int id_contVaccined, idx_iter, cont_bach, id_contI, id_contNotI, cont_death;
   int bach, cont_bach, sanas, contagiadas, fallecidas, recuperadas, RO, num_bach;
   int p_death, p_infected, p_recovered, p_healthy, p_RO;
@@ -21,6 +26,7 @@
 
   int quadrant_x = 0;
   int quadrant_y = 0;
+  gsl_rng *r;
 
 int main(int argc, char *argv[])
 {
@@ -34,28 +40,34 @@ int main(int argc, char *argv[])
   //----------FALTA PARAMETRIZACION--------------------------
   //Inicializacion de variables
   int id = 0;
-  id_contI = 0;
-  id_contNotI = 0;
-  id_contVaccined = 0;
-  iter = 10;
-  srand(world_rank*10); //Falta parametrizarlo para que en cada ejecucion sea diferente
+  int seed = world_rank*10*SEED;
   int population = 0;
   int quadrant = 2;
-  int when_change_group = 5; //Para saber cada cuantas iteraciones tengo que cambiar de grupo
+  when_change_group = 5; //Para saber cada cuantas iteraciones tengo que cambiar de grupo
   int cont_iterations = 0;
-  num_persons_to_vaccine = (int) 70 / (population * percent);
+  int id_contIAux;
+  int id_contNotIAux;
+  int is_vaccined;
   posX = 0;
   posY = 0;
   bach = 2;
   cont_bach = 1;
+  id_contI = 0;
+  id_contNotI = 0;
+  id_contVaccined = 0;
+  group_to_vaccine = 8;
+  alpha = 2;
+  beta = 5;
+  mu = 100;
 
+  srand(seed); //Falta parametrizarlo para que en cada ejecucion sea diferente
+  init_gsl(seed);
 
   if(world_rank==0){
-
-		quadrant_x = size_world/(int)floor(sqrt(world_size));
-		quadrant_y = size_world/(int)ceil(sqrt(world_size));
+		quadrant_x = SIZE_WORLD/(int)floor(sqrt(world_size));
+		quadrant_y = SIZE_WORLD/(int)ceil(sqrt(world_size));
 		population = round(POPULATION_SIZE/world_size);
-
+        num_persons_to_vaccine = round(POPULATION_SIZE * PERCENT);
   }
   
   //INICIALIZACION DE FICHEROS	posic = MPI_File_open( MPI_COMM_WORLD, "historialposic.txt", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &posiFile);
@@ -71,10 +83,10 @@ int main(int argc, char *argv[])
   MPI_Bcast (&population, 1, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast (&quadrant_x, 1, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast (&quadrant_y, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast (&num_persons_to_vaccine, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
   identificador_global = world_rank * population;
 
-  // Inicializamos el mundo entero --- Hay que hacerlo 1D para que sea dinamico y contiguo
-  // Realmente no necesitamos este mundo, hablar con pinas
 
   init_world(quadrant_x,quadrant_y);
 
@@ -89,14 +101,12 @@ int main(int argc, char *argv[])
 
   
   //Crear la poblacion
-  int contador = id_contI;
   for (i = 0; i < population; i++)
   {
         create_person(world_rank);
   }
   //Ahora que ya tenemos creado las listas,creadas las personas y el mundo empezamos las iteraciones
-
-  for (k = 0; k < iter; k++) // ITERACCIONES
+  for (k = 0; k < ITER; k++) // ITERACCIONES
   {
         if (cont_iterations >= when_change_group)
         {
@@ -110,8 +120,8 @@ int main(int argc, char *argv[])
 
 
         vaccines_left = num_persons_to_vaccine;
-        int id_contIAux = id_contI;
-        int id_contNotIAux = id_contNotI;
+        id_contIAux = id_contI;
+        id_contNotIAux = id_contNotI;
 
         for (i = 0; i < id_contIAux; i++) // INFECTED
         {
@@ -120,25 +130,48 @@ int main(int argc, char *argv[])
                 //change_state(l_person_infected[i]);
                 if (l_person_infected[i].id != -1) // Ha cambiado de estado y no se mueve
                 {
-                    //change_move_prob(&l_person_infected[i]);
+                    change_move_prob(&l_person_infected[i]);
                     //move(&l_person_infected[i]);
                 }
             }
         }
 
-        l_person_infected[0].id = -1;
-        printf("P%d | Id_contI -> %d\n",world_rank,id_contI);
-        realocate_lists();
-        printf("P%d | Id_contI -> %d\n",world_rank,id_contI);
+        for (i = 0; i < id_contVaccined; i++) // VACCINED
+        {
+            change_move_prob(&l_vaccined[i]);
+            //move(&l_vaccined[i]);
+        }
 
+        for (i = 0; i < id_contNotIAux; i++) // NOT-INFECTED
+        {
+            if (l_person_notinfected[i].id != -1)
+            {
+                if (vaccines_left > 0)
+                {
+                    is_vaccined = vacunate(l_person_notinfected[i]);
+                    if (is_vaccined == 0) // NOT-VACCINED
+                    {
+                        change_move_prob(&l_person_notinfected[i]);
+                        //move(&l_person_notinfected[i]);
+                    }
+                }
+                else
+                {
+                    change_move_prob(&l_person_notinfected[i]);
+                    //move(&l_person_notinfected[i]);
+                }
+            }
+        }
         //Comprobamos si hay BATCH
-        // if (cont_bach == BATCH)
-        // {
-        //     cont_bach = 1;
-        //     //calculate_metrics();
-        //     realocate_lists();
-        // }
-        // else cont_bach++;
+        if (cont_bach == BATCH)
+        {
+            cont_bach = 1;
+            //calculate_metrics();
+            //realocate_lists();
+        }
+        else {
+            cont_bach++;
+        }
     
   }
 
@@ -177,17 +210,27 @@ person_t *init_lists(int pop)
 
 void print_person(person_t p,int procesador)
 {
-    printf("Procedador %d Ha creado la persona => ID_Global:%d|ID:%d|State:%d|Age:%d|Incubation:%d|InfectionProb:%6.4lf|Recovery:%d|Coord:[%d,%d]\n",
-           procesador,p.id_global,p.id, p.state, p.age, p.incubation_period, p.prob_infection, p.recovery, p.coord[0], p.coord[1]);
+    printf("Procedador %d Ha creado la persona => ID_Global:%d|ID:%d|State:%d|Age:%d|Incubation:%d|InfectionProb:%6.4lf|Recovery:%d|Coord:[%d,%d]|Speed[%d,%d]\n",
+           procesador,p.id_global,p.id, p.state, p.age, p.incubation_period, p.prob_infection, p.recovery, p.coord[0], p.coord[1],p.speed[0],p.speed[1]);
 
 }
 
 int random_number(int min_num, int max_num)
 {
     //srand(time(NULL));
-    return rand() % max_num;
+    return rand() % (max_num + 1) + min_num;
 }
 
+void init_person_parameters(person_t *persona,int state){
+
+        persona->id = id_contNotI;
+        persona->age = random_number(1, 100);
+        persona->prob_infection = gsl_ran_beta(r, alpha, beta);
+        persona->state = state;
+        persona->incubation_period = random_number(0, MAX_INCUBATION);
+        persona->recovery = random_number(0, MAX_RECOVERY);
+        persona->id_global = identificador_global;
+}
 
 void create_person(int procesador){
 
@@ -197,37 +240,25 @@ void create_person(int procesador){
     if (state == 0 || state == 3) // SANO
     {        
         calculate_init_position(&l_person_notinfected[id_contNotI]);
-        l_person_notinfected[id_contNotI].id = id_contNotI;
-        l_person_notinfected[id_contNotI].age = random_number(1, 100);
-        l_person_notinfected[id_contNotI].prob_infection = 0.15;
-        l_person_notinfected[id_contNotI].state = state;
-        l_person_notinfected[id_contNotI].incubation_period = random_number(0, MAX_INCUBATION);
-        l_person_notinfected[id_contNotI].recovery = random_number(0, MAX_RECOVERY);
-        l_person_notinfected[id_contNotI].id_global = identificador_global;
-        identificador_global++;
+        init_person_parameters(&l_person_notinfected[id_contNotI],state);
         index.id = l_person_notinfected[id_contNotI].id;
         index.l = NOT_INFECTED;
-        world[l_person_notinfected[id_contNotI].coord[0]][l_person_notinfected[id_contNotI].coord[1]] = index;
+        world[l_person_notinfected[id_contNotI].coord[0]][l_person_infected[id_contNotI].coord[1]] = index;  
         id_contNotI++;
         print_person(l_person_notinfected[id_contNotI-1],procesador);
     }
     else // INFECTADO
     {
         calculate_init_position(&l_person_infected[id_contI]);
-     	l_person_infected[id_contI].id = id_contI;
-        l_person_infected[id_contI].age = random_number(1, 100);
-        l_person_infected[id_contI].prob_infection = 0.15;
-        l_person_infected[id_contI].state = state;
-        l_person_infected[id_contI].incubation_period = random_number(0, MAX_INCUBATION);
-        l_person_infected[id_contI].recovery = random_number(0, MAX_RECOVERY);
-        l_person_infected[id_contI].id_global = identificador_global;
-        identificador_global++;
+        init_person_parameters(&l_person_infected[id_contI],state);
         index.id = l_person_infected[id_contI].id;
         index.l = INFECTED;
         world[l_person_infected[id_contI].coord[0]][l_person_infected[id_contI].coord[1]] = index;
         id_contI++;
         print_person(l_person_infected[id_contI-1],procesador);
     }
+        identificador_global++;
+
 }
 
 
@@ -297,7 +328,7 @@ void propagate(person_t *person)
 
     for (i = 0; i < 12; i++) // Todas las direcciones
     {
-        if ((x + directions[i][0]) < size_world && (y + directions[i][1]) < size_world) // Mantenerse dentro
+        if ((x + directions[i][0]) < SIZE_WORLD && (y + directions[i][1]) < SIZE_WORLD) // Mantenerse dentro
         {
             index = world[x + directions[i][0]][y + directions[i][1]];
             if (index.id != -1 && index.l == NOT_INFECTED) // Persona no infectada y asignada
@@ -403,5 +434,48 @@ void realocate_lists(){
         
     } 
     id_contVaccined = last_value;
+
+}
+
+
+int vacunate(person_t person)
+{
+    if (person.age >= group_to_vaccine * 10)
+    {
+        printf(">>>>>%d VACUNADO!\n", person.id_global);
+        l_person_notinfected[person.id].id = -1;
+        person.state = 4;
+        l_vaccined[id_contVaccined] = person;
+        world[person.coord[0]][person.coord[1]].l = VACCINED;
+        world[person.coord[0]][person.coord[1]].id = id_contVaccined;
+        id_contVaccined++;
+        return 1;
+    }
+    else
+    {
+        return 0; // no vacunado
+    }
+}
+
+void change_move_prob(person_t *person)
+{
+    //printf("ANTES  | Person:%d | Speed:%d | Direction:%d | \n",person->id_global,person->speed[1],person->speed[0]);
+    person->speed[0] = random_number(0, MAX_DIRECTION);
+    person->speed[1] = random_number(0, MAX_SPEED);
+    //printf("DESPUES  | Person:%d | Speed:%d | Direction:%d | \n",person->id_global,person->speed[1],person->speed[0]);
+}
+
+void init_gsl(int seed)
+{
+    gsl_rng_env_setup();
+    r = gsl_rng_alloc(gsl_rng_default);
+    gsl_rng_set(r, seed);
+}
+
+void change_infection_prob(person_t *person)
+{
+    //printf("ANTES  | Person:%d | Infection_Prob:%f | \n",person->id_global,person->prob_infection);
+    person->prob_infection = gsl_ran_beta(r, alpha, beta);
+    //printf("DESPUES  | Person:%d | Infection_Prob:%f | \n",person->id_global,person->prob_infection);
 
 }
