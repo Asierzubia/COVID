@@ -1,18 +1,18 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 
-#define SIZE_WORLD 30
+#define SIZE_WORLD 16
 #define PERCENT 0.05
 #define MAX_SPEED 2
-#define MAX_DIRECTION 8
+#define MAX_DIRECTION 7
 #define MAX_INCUBATION 5
 #define MAX_RECOVERY 10
 #define MAX_INFECTION 0.3 //0.6
 #define MAX_DEATH 200
-#define POPULATION_SIZE 10
+#define POPULATION_SIZE 100
 #define BATCH 2
 #define CUADRICULA 5
-#define ITER 50
+#define ITER 1000
 #define SEED 3
 
 
@@ -99,5 +99,8 @@ int is_inside_world(int from, int direction, int to_node);
 void move_person(person_t *person, int world_rank);
 void move(person_t *person, coord_t *coord);
 int move_visitor(person_t *person, coord_t *coord);
+
+void send_visitors();
+void init_move_list(int size_x, int size_y);
 
 #endif // DEFINITIONS_H
