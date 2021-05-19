@@ -65,7 +65,6 @@ typedef struct person_move
 {
     person_t person;
     coord_t coord;
-    int *rank;
 } person_move_t;
 
 
@@ -93,7 +92,7 @@ void realocate_lists();
 //Crear DataTypes
 void create_data_type_coord(coord_t *coordenadas, MPI_Datatype *tipo);
 void create_data_type_person(person_t *persona,MPI_Datatype *tipo, MPI_Datatype *coordenadas);
-void create_data_type_person_move(int *list, coord_t *coordenadas, person_t *persona,MPI_Datatype *person,MPI_Datatype *coord,MPI_Datatype *tipo);
+void create_data_type_person_move(coord_t *coordenadas, person_t *persona,MPI_Datatype *person,MPI_Datatype *coord,MPI_Datatype *tipo);
 
 // Move
 int is_inside_world(int from, int direction, int to_node);

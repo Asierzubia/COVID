@@ -23,6 +23,7 @@ index_t **world;
 person_t *l_person_infected, *l_person_notinfected, *l_vaccined;
 person_move_t **l_person_moved;
 coord_t *l_person_propagate;
+int *l_cont_node;
 
 int quadrant_x = 0;
 int quadrant_y = 0;
@@ -88,7 +89,6 @@ int main(int argc, char *argv[])
 
     identificador_global = world_rank * population;
     init_world(quadrant_x, quadrant_y);
-
     //Creo los DataTypes
     MPI_Datatype coord_type;
     MPI_Datatype person_type;
@@ -110,20 +110,16 @@ int main(int argc, char *argv[])
     cood_virtual.x = 1;
     cood_virtual.y = 0;
     persona_virtual.coord = cood_virtual;
-    int *list = malloc(1*sizeof(int));
 
     create_data_type_coord(&cood_virtual, &coord_type);
     create_data_type_person(&persona_virtual, &person_type, &coord_type);
-    create_data_type_person_move(&list, &cood_virtual, &persona_virtual, &person_type, &coord_type, &person_move);
+    create_data_type_person_move(&cood_virtual, &persona_virtual, &person_type, &coord_type, &person_move);
     //create_data_type_person_prop(,&person_prop);
 
     //Inicializar listas
     l_person_infected = init_lists(population);
     l_person_notinfected = init_lists(population);
     l_vaccined = init_lists(population);
-    // Dos nuevas listas para controlar los que se mueven de cuadrante y a los que hay que infectar de otros cuadrantes
-    l_person_moved = init_lists(population);
-    l_person_propagate = init_lists(population);
 
     //Crear la poblacion
     for (i = 0; i < population; i++)
@@ -131,6 +127,8 @@ int main(int argc, char *argv[])
         create_person(world_rank);
     }
     //Ahora que ya tenemos creado las listas,creadas las personas y el mundo empezamos las iteraciones
+    init_move_list(world_size,quadrant_x*quadrant_y);
+
     for (k = 0; k < ITER; k++) // ITERACCIONES
     {
         if (cont_iterations >= when_change_group)
@@ -227,7 +225,10 @@ int main(int argc, char *argv[])
 }
 
 void send_visitors() {
-    
+    for (i = 0; i < SIZE_WORLD; i++)
+    {
+            l_person_moved[i];
+    }
 }
 
 person_t *init_lists(int pop)
@@ -311,6 +312,31 @@ void init_world(int size_x, int size_y)
             world[i][j].id = -1;
         }
     }
+}
+
+void init_move_list(int size_x, int size_y)
+{
+    world = malloc(size_x * sizeof(index_t *));
+    if (world == NULL)
+    {
+        fprintf(stderr, "Memory Allocation Failed\n");
+        exit(EXIT_FAILURE);
+    }
+    int i;
+    for (i = 0; i < size_x; i++)
+    {
+        world[i] = malloc(size_y * sizeof(index_t));
+        if (world[i] == NULL)
+        {
+            fprintf(stderr, "Memory Allocation Failed\n");
+            exit(1);
+        }
+        for (j = 0; j < size_y; j++)
+        {
+            world[i][j].id = -1;
+        }
+    }
+    l_cont_node = malloc(world_size*sizeof(int));
 }
 /*
 void change_state(person_t person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
@@ -451,12 +477,9 @@ void move_person(person_t *person, int world_rank)
             int to_node = search_node(world_rank, x, y);
             if (is_inside_world(world_rank, direction, to_node)) // SE PUEDE
             {
-                int *l = malloc(1*sizeof(int));
-                memcpy(&l_person_moved[cont_move_visitor].person,&person,sizeof (person_t));
-                memcpy(&l_person_moved[cont_move_visitor].coord,&coord,sizeof (coord_t));
-                memcpy(&l_person_moved[cont_move_visitor].rank,&l,sizeof (int));
-                cont_move_visitor++;
-                free(l);
+                memcpy(&l_person_moved[to_node][l_cont_node[to_node]].person,&person,sizeof (person_t));
+                memcpy(&l_person_moved[to_node][l_cont_node[to_node]].coord,&coord,sizeof (coord_t));
+                l_cont_node[to_node]++;
             }
         }
     }
@@ -739,20 +762,19 @@ void create_data_type_person(person_t *persona, MPI_Datatype *tipo, MPI_Datatype
     MPI_Type_commit(tipo);
 }
 
-void create_data_type_person_move(int *list, coord_t *coordenadas, person_t *persona, MPI_Datatype *person, MPI_Datatype *coord, MPI_Datatype *tipo)
-{
-    MPI_Datatype types[3] = {*coord, *person, MPI_INT};
+void create_data_type_person_move(coord_t *coordenadas, person_t *persona,MPI_Datatype *person,MPI_Datatype *coord,MPI_Datatype *tipo){
 
-    int lengths[3] = {1, 1, 1};
-    MPI_Aint displacements[2], dir1, dir2;
+    MPI_Datatype types[2] = {*coord,*person};
+
+    int lengths[2] = {1,1};
+    MPI_Aint displacements[2],dir1,dir2; 
     MPI_Aint base_address;
     displacements[0] = 0;
-    MPI_Get_address(&coordenadas, &dir1);
-    MPI_Get_address(&persona, &dir2);
+    MPI_Get_address(&coordenadas,               &dir1);
+    MPI_Get_address(&persona,                   &dir2);
     displacements[1] = dir2 - dir1;
-    MPI_Get_address(&list, &dir2);
-    displacements[2] = dir2 - dir1;
-    MPI_Type_create_struct(3, lengths, displacements, types, tipo);
+
+    MPI_Type_create_struct(2, lengths, displacements, types, tipo);
     MPI_Type_commit(tipo);
 }
 
