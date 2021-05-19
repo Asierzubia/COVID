@@ -63,8 +63,9 @@ typedef struct person
 
 typedef struct person_move
 {
-    person_t persona;
-    coord_t coordenadas;
+    person_t person;
+    coord_t coord;
+    int *rank;
 } person_move_t;
 
 
@@ -77,7 +78,6 @@ void init_gsl();
 void change_move_prob(person_t *person);
 void change_infection_prob(person_t *person);
 void init_world();
-void move(person_t *person);
 void calculate_init_position(person_t *person);
 void print_world();
 void print_person(person_t person,int procesador);
@@ -93,7 +93,12 @@ void realocate_lists();
 //Crear DataTypes
 void create_data_type_coord(coord_t *coordenadas, MPI_Datatype *tipo);
 void create_data_type_person(person_t *persona,MPI_Datatype *tipo, MPI_Datatype *coordenadas);
-void create_data_type_person_move(coord_t *coordenadas, person_t *persona,MPI_Datatype *person,MPI_Datatype *coord,MPI_Datatype *tipo);
+void create_data_type_person_move(int *list, coord_t *coordenadas, person_t *persona,MPI_Datatype *person,MPI_Datatype *coord,MPI_Datatype *tipo);
 
+// Move
+int is_inside_world(int from, int direction, int to_node);
+void move_person(person_t *person, int world_rank);
+void move(person_t *person, coord_t *coord);
+int move_visitor(person_t *person, coord_t *coord);
 
 #endif // DEFINITIONS_H
