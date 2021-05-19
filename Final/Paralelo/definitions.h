@@ -42,12 +42,18 @@ typedef struct index
 
 } index_t;
 
+typedef struct coord
+{
+    int x;
+    int y;
+} coord_t;
+
 typedef struct person
 {
     int age;
     int state;
     float prob_infection;
-    int coord[2];
+    coord_t coord;
     int speed[2]; // 0 direction 1 speed
     int incubation_period;
     int recovery;
@@ -55,9 +61,14 @@ typedef struct person
     int id_global;
 } person_t;
 
+typedef struct person_move
+{
+    person_t persona;
+    coord_t coordenadas;
+} person_move_t;
+
+
 void create_person(int procesador);
-//person_t *l_person_infected, *l_person_notinfected, *l_vaccined;
-void create_data_type(person_t *persona,MPI_Datatype *tipo);
 void per_cicle();
 void change_state(person_t person);
 void propagate(person_t *person);
@@ -79,6 +90,10 @@ int random_number(int min_num, int max_num);
 void realocate_lists();
 
 
-void print_person_especial(person_t p,int procesador);
+//Crear DataTypes
+void create_data_type_coord(coord_t *coordenadas, MPI_Datatype *tipo);
+void create_data_type_person(person_t *persona,MPI_Datatype *tipo, MPI_Datatype *coordenadas);
+void create_data_type_person_move(coord_t *coordenadas, person_t *persona,MPI_Datatype *person,MPI_Datatype *coord,MPI_Datatype *tipo);
+
 
 #endif // DEFINITIONS_H

@@ -86,9 +86,16 @@ int main(int argc, char *argv[])
   MPI_Bcast (&num_persons_to_vaccine, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
   identificador_global = world_rank * population;
-
-  MPI_Datatype person_type;
   init_world(quadrant_x,quadrant_y);
+
+  //Creo los DataTypes
+  MPI_Datatype coord_type;
+  MPI_Datatype person_type;
+  MPI_Datatype person_move;
+  MPI_Datatype person_prop;
+
+
+  //Ficticio
   person_t persona_virtual;
   persona_virtual.id = id_contNotI;
   persona_virtual.age = random_number(1, 100);
@@ -99,9 +106,16 @@ int main(int argc, char *argv[])
   persona_virtual.id_global = identificador_global;
   persona_virtual.speed[0] = 1;
   persona_virtual.speed[1] = 0;
-  persona_virtual.coord[0] = 0;
-  persona_virtual.coord[1] = 2;
-  create_data_type(&persona_virtual,&person_type);
+  coord_t cood_virtual;
+  cood_virtual.x = 1;
+  cood_virtual.y = 0;
+  persona_virtual.coord = cood_virtual;
+
+
+  create_data_type_coord(&cood_virtual,&coord_type);
+  create_data_type_person(&persona_virtual,&person_type,&coord_type);
+  create_data_type_person_move(&cood_virtual,&persona_virtual,&person_type,&coord_type,&person_move);
+  //create_data_type_person_prop(,&person_prop);
   	
   //Inicializar listas
   l_person_infected = init_lists(population);
@@ -189,31 +203,7 @@ int main(int argc, char *argv[])
         }
     
   }
- printf("-----------------------------------------------------------------------------------\n");
-        if(world_rank == 0){
-
-            person_t new_person;
-            new_person.id = id_contNotI;
-            new_person.age = random_number(1, 100);
-            new_person.prob_infection = gsl_ran_beta(r, alpha, beta);
-            new_person.state = NOT_INFECTED;
-            new_person.incubation_period = random_number(0, MAX_INCUBATION);
-            new_person.recovery = random_number(0, MAX_RECOVERY);
-            new_person.id_global = identificador_global;
-            new_person.speed[0] = 1;
-            new_person.speed[1] = 0;
-            new_person.coord[0] = 0;
-            new_person.coord[1] = 2;
-            print_person_especial(new_person,world_rank);
-            MPI_Send(&new_person, 1, person_type, 1, 0, MPI_COMM_WORLD);
-        
-        }else{
-            
-            person_t prueba;
-            MPI_Recv(&prueba, 1, person_type, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            print_person_especial(prueba,world_rank);
-
-        }
+ 
   //Solo imprimir las metricas al final de la ejecucion
    if(world_rank == 0){
        //save_metrics();
@@ -247,17 +237,10 @@ person_t *init_lists(int pop)
 
 }
 
-void print_person_especial(person_t p,int procesador)
-{
-    printf("DATATYPE | Procedador %d Ha creado la persona => ID_Global:%d|ID:%d|State:%d|Age:%d|Incubation:%d|InfectionProb:%6.4lf|Recovery:%d|Coord:[%d,%d]|Speed[%d,%d]\n",
-           procesador,p.id_global,p.id, p.state, p.age, p.incubation_period, p.prob_infection, p.recovery, p.coord[0], p.coord[1],p.speed[0],p.speed[1]);
-
-}
-
 void print_person(person_t p,int procesador)
 {
     printf("Procedador %d Ha creado la persona => ID_Global:%d|ID:%d|State:%d|Age:%d|Incubation:%d|InfectionProb:%6.4lf|Recovery:%d|Coord:[%d,%d]|Speed[%d,%d]\n",
-           procesador,p.id_global,p.id, p.state, p.age, p.incubation_period, p.prob_infection, p.recovery, p.coord[0], p.coord[1],p.speed[0],p.speed[1]);
+           procesador,p.id_global,p.id, p.state, p.age, p.incubation_period, p.prob_infection, p.recovery, p.coord.x, p.coord.y,p.speed[0],p.speed[1]);
 
 }
 
@@ -278,7 +261,7 @@ void init_person_parameters(person_t *persona,int state,int id_local){
         persona->id_global = identificador_global;
         persona->speed[0] = random_number(0,MAX_DIRECTION);
         persona->speed[1] = random_number(0,MAX_SPEED);
-        world[persona->coord[0]][persona->coord[1]].id = id_local;
+        world[persona->coord.x][persona->coord.y].id = id_local;
 
 }
 
@@ -290,7 +273,7 @@ void create_person(int procesador){
     {        
         calculate_init_position(&l_person_notinfected[id_contNotI]);
         init_person_parameters(&l_person_notinfected[id_contNotI],state,id_contNotI);
-        world[l_person_notinfected[id_contNotI].coord[0]][l_person_notinfected[id_contNotI].coord[1]].l = NOT_INFECTED;  
+        world[l_person_notinfected[id_contNotI].coord.x][l_person_notinfected[id_contNotI].coord.y].l = NOT_INFECTED;  
         id_contNotI++;
         print_person(l_person_notinfected[id_contNotI-1],procesador);
     }
@@ -298,7 +281,7 @@ void create_person(int procesador){
     {
         calculate_init_position(&l_person_infected[id_contI]);
         init_person_parameters(&l_person_infected[id_contI],state,id_contI);
-        world[l_person_infected[id_contI].coord[0]][l_person_infected[id_contI].coord[1]].l = INFECTED;
+        world[l_person_infected[id_contI].coord.x][l_person_infected[id_contI].coord.y].l = INFECTED;
         id_contI++;
         print_person(l_person_infected[id_contI-1],procesador);
     }
@@ -367,8 +350,8 @@ void propagate(person_t *person)
     //Tengo que controlar que no se vayan del cuadrado
     int directions[12][2] = {{1, 0}, {2, 0}, {1, 1}, {0, 1}, {0, 2}, {-1, 1}, {-1, 0}, {-2, 0}, {-1, -1}, {0, -1}, {0, -2}, {1, -1}};
     index_t index;
-    int x = person->coord[0];
-    int y = person->coord[1];
+    int x = person->coord.x;
+    int y = person->coord.y;
     person_t person_aux;
     float prob_aux;
 
@@ -417,8 +400,8 @@ void propagate(person_t *person)
 */
 void calculate_init_position(person_t *person)
 {
-    person->coord[0] = posX; // coord x
-    person->coord[1] = posY; // coord y
+    person->coord.x = posX; // coord x
+    person->coord.y = posY; // coord y
     posY++;
     if (posY == quadrant_y)
     {
@@ -443,7 +426,7 @@ void realocate_lists(){
             memcpy(&l_person_infected[i],&l_person_infected[j],sizeof(person_t));
             l_person_infected[i].id = i;
             l_person_infected[j].id = -1;
-            world[l_person_infected[i].coord[0]][l_person_infected[i].coord[1]].id = i;
+            world[l_person_infected[i].coord.x][l_person_infected[i].coord.y].id = i;
         }
 
     }
@@ -459,7 +442,7 @@ void realocate_lists(){
             memcpy(&l_person_notinfected[i],&l_person_notinfected[j],sizeof(person_t));
             l_person_notinfected[i].id = i;
             l_person_notinfected[j].id = -1;
-            world[l_person_notinfected[i].coord[0]][l_person_notinfected[i].coord[1]].id = i;
+            world[l_person_notinfected[i].coord.x][l_person_notinfected[i].coord.y].id = i;
         }        
     }
     id_contNotI = last_value;
@@ -475,7 +458,7 @@ void realocate_lists(){
             memcpy(&l_vaccined[i],&l_vaccined[j],sizeof(person_t));
             l_vaccined[i].id = i;
             l_vaccined[j].id = -1;
-            world[l_vaccined[i].coord[0]][l_vaccined[i].coord[1]].id = i;
+            world[l_vaccined[i].coord.x][l_vaccined[i].coord.y].id = i;
         }
         
     } 
@@ -492,8 +475,8 @@ int vacunate(person_t person)
         l_person_notinfected[person.id].id = -1;
         person.state = 4;
         l_vaccined[id_contVaccined] = person;
-        world[person.coord[0]][person.coord[1]].l = VACCINED;
-        world[person.coord[0]][person.coord[1]].id = id_contVaccined;
+        world[person.coord.x][person.coord.y].l = VACCINED;
+        world[person.coord.x][person.coord.y].id = id_contVaccined;
         id_contVaccined++;
         return 1;
     }
@@ -527,15 +510,33 @@ void change_infection_prob(person_t *person)
 }
 
 
-void create_data_type(person_t *persona,MPI_Datatype *tipo){
+void create_data_type_coord(coord_t *coordenadas, MPI_Datatype *tipo){
+
+    MPI_Datatype types[2] = {MPI_INT, MPI_INT};
+
+    int lengths[2] = {1,1};
+    MPI_Aint displacements[2],dir1,dir2; 
+    MPI_Aint base_address;
+    
+    MPI_Get_address(&coordenadas,                    &base_address);
+    displacements[0] = 0;
+    MPI_Get_address(&coordenadas->x,               &dir1);
+    MPI_Get_address(&coordenadas->y,               &dir2);
+    displacements[1] = dir2 - dir1;
+    MPI_Type_create_struct(2, lengths, displacements, types, tipo);
+    MPI_Type_commit(tipo);
+
+}
+
+void create_data_type_person(person_t *persona,MPI_Datatype *tipo, MPI_Datatype *coordenadas){
 
     
-    MPI_Datatype types[9] = { MPI_INT ,MPI_INT, MPI_FLOAT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT};
+    MPI_Datatype types[9] = { MPI_INT ,MPI_INT, MPI_FLOAT, *coordenadas, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT};
 
-    MPI_Aint displacements[9],dir1,dir2; //Diez campos, los nueve de la persona mas las nuevas coordenadas a las que se mueve
+    MPI_Aint displacements[9],dir1,dir2;
     MPI_Aint base_address;
 
-    int lengths[9] = { 1, 1, 1, 2, 2, 1, 1, 1, 1 };
+    int lengths[9] = { 1, 1, 1, 1, 2, 1, 1, 1, 1 };
 
     MPI_Get_address(&persona,                    &base_address);
     displacements[0] = 0;
@@ -556,10 +557,27 @@ void create_data_type(person_t *persona,MPI_Datatype *tipo){
     displacements[7] = dir2 - dir1;
     MPI_Get_address(&persona->id_global,         &dir2);
     displacements[8] = dir2 - dir1;
- 
+
     MPI_Type_create_struct(9, lengths, displacements, types, tipo);
     MPI_Type_commit(tipo);
 
 }
+
+void create_data_type_person_move(coord_t *coordenadas, person_t *persona,MPI_Datatype *person,MPI_Datatype *coord,MPI_Datatype *tipo){
+
+    MPI_Datatype types[2] = {*coord,*person};
+
+    int lengths[2] = {1,1};
+    MPI_Aint displacements[2],dir1,dir2; 
+    MPI_Aint base_address;
+    displacements[0] = 0;
+    MPI_Get_address(&coordenadas,               &dir1);
+    MPI_Get_address(&persona,                   &dir2);
+    displacements[1] = dir2 - dir1;
+
+    MPI_Type_create_struct(2, lengths, displacements, types, tipo);
+    MPI_Type_commit(tipo);
+}
+
 
 //https://www.rookiehpc.com/mpi/docs/mpi_type_create_struct.php
