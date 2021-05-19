@@ -57,7 +57,7 @@ typedef struct person
 
 void create_person(int procesador);
 //person_t *l_person_infected, *l_person_notinfected, *l_vaccined;
-
+void create_data_type(person_t *persona,MPI_Datatype *tipo);
 void per_cicle();
 void change_state(person_t person);
 void propagate(person_t *person);
@@ -71,10 +71,14 @@ void calculate_init_position(person_t *person);
 void print_world();
 void print_person(person_t person,int procesador);
 void calculate_metrics();
-void init_person_parameters(person_t *persona,int estado);
+void init_person_parameters(person_t *persona,int estado,int id_local);
 float calculate_ageMean();
 float calculate_prob_death(int edad);
 int vacunate(person_t person);
 int random_number(int min_num, int max_num);
 void realocate_lists();
+
+
+void print_person_especial(person_t p,int procesador);
+
 #endif // DEFINITIONS_H

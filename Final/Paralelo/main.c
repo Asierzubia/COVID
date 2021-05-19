@@ -87,9 +87,21 @@ int main(int argc, char *argv[])
 
   identificador_global = world_rank * population;
 
-
+  MPI_Datatype person_type;
   init_world(quadrant_x,quadrant_y);
-
+  person_t persona_virtual;
+  persona_virtual.id = id_contNotI;
+  persona_virtual.age = random_number(1, 100);
+  persona_virtual.prob_infection = gsl_ran_beta(r, alpha, beta);
+  persona_virtual.state = NOT_INFECTED;
+  persona_virtual.incubation_period = random_number(0, MAX_INCUBATION);
+  persona_virtual.recovery = random_number(0, MAX_RECOVERY);
+  persona_virtual.id_global = identificador_global;
+  persona_virtual.speed[0] = 1;
+  persona_virtual.speed[1] = 0;
+  persona_virtual.coord[0] = 0;
+  persona_virtual.coord[1] = 2;
+  create_data_type(&persona_virtual,&person_type);
   	
   //Inicializar listas
   l_person_infected = init_lists(population);
@@ -162,6 +174,9 @@ int main(int argc, char *argv[])
                 }
             }
         }
+
+        //Momento de mirar las personas que se han infectado o movido a cuadrantes de otro procesador
+       
         //Comprobamos si hay BATCH
         if (cont_bach == BATCH)
         {
@@ -174,7 +189,31 @@ int main(int argc, char *argv[])
         }
     
   }
+ printf("-----------------------------------------------------------------------------------\n");
+        if(world_rank == 0){
 
+            person_t new_person;
+            new_person.id = id_contNotI;
+            new_person.age = random_number(1, 100);
+            new_person.prob_infection = gsl_ran_beta(r, alpha, beta);
+            new_person.state = NOT_INFECTED;
+            new_person.incubation_period = random_number(0, MAX_INCUBATION);
+            new_person.recovery = random_number(0, MAX_RECOVERY);
+            new_person.id_global = identificador_global;
+            new_person.speed[0] = 1;
+            new_person.speed[1] = 0;
+            new_person.coord[0] = 0;
+            new_person.coord[1] = 2;
+            print_person_especial(new_person,world_rank);
+            MPI_Send(&new_person, 1, person_type, 1, 0, MPI_COMM_WORLD);
+        
+        }else{
+            
+            person_t prueba;
+            MPI_Recv(&prueba, 1, person_type, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            print_person_especial(prueba,world_rank);
+
+        }
   //Solo imprimir las metricas al final de la ejecucion
    if(world_rank == 0){
        //save_metrics();
@@ -208,6 +247,13 @@ person_t *init_lists(int pop)
 
 }
 
+void print_person_especial(person_t p,int procesador)
+{
+    printf("DATATYPE | Procedador %d Ha creado la persona => ID_Global:%d|ID:%d|State:%d|Age:%d|Incubation:%d|InfectionProb:%6.4lf|Recovery:%d|Coord:[%d,%d]|Speed[%d,%d]\n",
+           procesador,p.id_global,p.id, p.state, p.age, p.incubation_period, p.prob_infection, p.recovery, p.coord[0], p.coord[1],p.speed[0],p.speed[1]);
+
+}
+
 void print_person(person_t p,int procesador)
 {
     printf("Procedador %d Ha creado la persona => ID_Global:%d|ID:%d|State:%d|Age:%d|Incubation:%d|InfectionProb:%6.4lf|Recovery:%d|Coord:[%d,%d]|Speed[%d,%d]\n",
@@ -221,43 +267,43 @@ int random_number(int min_num, int max_num)
     return rand() % (max_num + 1) + min_num;
 }
 
-void init_person_parameters(person_t *persona,int state){
+void init_person_parameters(person_t *persona,int state,int id_local){
 
-        persona->id = id_contNotI;
+        persona->id = id_local;
         persona->age = random_number(1, 100);
         persona->prob_infection = gsl_ran_beta(r, alpha, beta);
         persona->state = state;
         persona->incubation_period = random_number(0, MAX_INCUBATION);
         persona->recovery = random_number(0, MAX_RECOVERY);
         persona->id_global = identificador_global;
+        persona->speed[0] = random_number(0,MAX_DIRECTION);
+        persona->speed[1] = random_number(0,MAX_SPEED);
+        world[persona->coord[0]][persona->coord[1]].id = id_local;
+
 }
 
 void create_person(int procesador){
 
     //Lo he hecho asi porque dentro de las listas ya estan creadas las estructuras
-    index_t index;
     int state = random_number(0,2);
     if (state == 0 || state == 3) // SANO
     {        
         calculate_init_position(&l_person_notinfected[id_contNotI]);
-        init_person_parameters(&l_person_notinfected[id_contNotI],state);
-        index.id = l_person_notinfected[id_contNotI].id;
-        index.l = NOT_INFECTED;
-        world[l_person_notinfected[id_contNotI].coord[0]][l_person_infected[id_contNotI].coord[1]] = index;  
+        init_person_parameters(&l_person_notinfected[id_contNotI],state,id_contNotI);
+        world[l_person_notinfected[id_contNotI].coord[0]][l_person_notinfected[id_contNotI].coord[1]].l = NOT_INFECTED;  
         id_contNotI++;
         print_person(l_person_notinfected[id_contNotI-1],procesador);
     }
     else // INFECTADO
     {
         calculate_init_position(&l_person_infected[id_contI]);
-        init_person_parameters(&l_person_infected[id_contI],state);
-        index.id = l_person_infected[id_contI].id;
-        index.l = INFECTED;
-        world[l_person_infected[id_contI].coord[0]][l_person_infected[id_contI].coord[1]] = index;
+        init_person_parameters(&l_person_infected[id_contI],state,id_contI);
+        world[l_person_infected[id_contI].coord[0]][l_person_infected[id_contI].coord[1]].l = INFECTED;
         id_contI++;
         print_person(l_person_infected[id_contI-1],procesador);
     }
-        identificador_global++;
+    
+    identificador_global++;
 
 }
 
@@ -479,3 +525,41 @@ void change_infection_prob(person_t *person)
     //printf("DESPUES  | Person:%d | Infection_Prob:%f | \n",person->id_global,person->prob_infection);
 
 }
+
+
+void create_data_type(person_t *persona,MPI_Datatype *tipo){
+
+    
+    MPI_Datatype types[9] = { MPI_INT ,MPI_INT, MPI_FLOAT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT};
+
+    MPI_Aint displacements[9],dir1,dir2; //Diez campos, los nueve de la persona mas las nuevas coordenadas a las que se mueve
+    MPI_Aint base_address;
+
+    int lengths[9] = { 1, 1, 1, 2, 2, 1, 1, 1, 1 };
+
+    MPI_Get_address(&persona,                    &base_address);
+    displacements[0] = 0;
+    MPI_Get_address(&persona->age,               &dir1);
+    MPI_Get_address(&persona->state,             &dir2);
+    displacements[1] = dir2 - dir1;
+    MPI_Get_address(&persona->prob_infection,    &dir2);
+    displacements[2] = dir2 - dir1;
+    MPI_Get_address(&persona->coord,             &dir2);
+    displacements[3] = dir2 - dir1;
+    MPI_Get_address(&persona->speed,             &dir2);
+    displacements[4] = dir2 - dir1;
+    MPI_Get_address(&persona->incubation_period, &dir2);
+    displacements[5] = dir2 - dir1;
+    MPI_Get_address(&persona->recovery,          &dir2);
+    displacements[6] = dir2 - dir1;
+    MPI_Get_address(&persona->id,                &dir2);
+    displacements[7] = dir2 - dir1;
+    MPI_Get_address(&persona->id_global,         &dir2);
+    displacements[8] = dir2 - dir1;
+ 
+    MPI_Type_create_struct(9, lengths, displacements, types, tipo);
+    MPI_Type_commit(tipo);
+
+}
+
+//https://www.rookiehpc.com/mpi/docs/mpi_type_create_struct.php
