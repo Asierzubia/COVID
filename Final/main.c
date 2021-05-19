@@ -26,16 +26,11 @@ int main(int argc, char *argv[])
     posX = 0;
     posY = 0;
     cont_bach = 1;
-    cont_death = 0;
     vaccines_left = 0;
     id_contVaccined = 0;
     //-----Matricas---/
     bach = 2;
     cont_bach = 1;
-    sanas = id_contNotI;
-    contagiadas = id_contI;
-    fallecidas = 0;
-    recuperadas = 0;
     RO = 0;
     num_bach = 0;
     mean_death = 0.0;
@@ -43,7 +38,10 @@ int main(int argc, char *argv[])
     mean_recovered = 0.0;
     mean_healthy = 0.0;
     mean_RO = 0;
-
+    aux_death = 0;
+    aux_healthy = 0;
+    aux_infected = 0;
+    aux_recovered = 0;
     p_death = 0;
     p_infected = 0;
     p_recovered = 0;
@@ -53,7 +51,7 @@ int main(int argc, char *argv[])
     init_world();
     create_population();
     per_cicle();
-    gsl_rng_free(r);
+    free_structs();
 }
 
 void per_cicle()
@@ -121,7 +119,8 @@ void per_cicle()
         if (cont_bach == BATCH)
         {
             cont_bach = 1;
-            //calculate_metrics();
+            num_bach++;
+            calculate_metrics();
         }
         else
         {
@@ -130,8 +129,14 @@ void per_cicle()
     }
 }
 
-void metrics()
-{
+void free_structs() {
+    free(arch_metrics);
+    free(arch_positions);
+    free(l_person_infected);
+    free(l_person_notinfected);
+    free(l_vaccined);
+    gsl_rng_free(r);
+
 }
 
 void change_state(person_t person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
@@ -142,7 +147,7 @@ void change_state(person_t person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
     }
     else
     {
-        if (person.recovery == 0)
+        if (person.recovery == 0) // INMUNE
         {
             l_person_infected[person.id].state = 3;
             l_person_infected[person.id].incubation_period = random_number(3, 5);
@@ -150,6 +155,8 @@ void change_state(person_t person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
             l_person_infected[person.id].id = -1;
             l_vaccined[id_contVaccined] = person;
             id_contVaccined++;
+            p_recovered++;
+            p_healthy;
         }
         else
         {
@@ -188,7 +195,8 @@ void propagate(person_t *person)
                         printf(">>>>>%d HA MUERTO!\n", person_aux.id);
                         person_aux.state = 5;
                         world[x + directions[i][0]][y + directions[i][1]].id = -1;
-                        cont_death++;
+                        p_death++;
+                        p_healthy--;
                     }
                     else
                     {
@@ -206,6 +214,7 @@ void propagate(person_t *person)
                         world[x + directions[i][0]][y + directions[i][1]].l = INFECTED;
                         world[x + directions[i][0]][y + directions[i][1]].id = id_contI;
                         id_contI++;
+                        p_infected++;
                     }
                 }
             }
@@ -277,7 +286,7 @@ void move(person_t *person)
 person_t create_person()
 {
     person_t person;
-    person.age = random_number(1, 100);
+    person.age = calculate_age();
     person.prob_infection = gsl_ran_beta(r, alfa, beta);
     person.state = random_number(0, 2);
     person.incubation_period = random_number(0, MAX_INCUBATION);
@@ -290,6 +299,7 @@ person_t create_person()
         l_person_notinfected[id_contNotI] = person;
         id_contNotI++;
         index.l = NOT_INFECTED;
+        p_healthy++;
     }
     else // INFECTADO
     {
@@ -297,6 +307,7 @@ person_t create_person()
         l_person_infected[id_contI] = person;
         id_contI++;
         index.l = INFECTED;
+        p_infected++;
     }
     index.id = person.id;
     world[person.coord[0]][person.coord[1]] = index; // INTRODUCIDO EN WORLD
@@ -377,7 +388,7 @@ void create_population()
     for (int i = 0; i < POPULATION_SIZE; i++)
     {
         create_person();
-        sleep(1);
+        //sleep(1);
     }
 }
 
@@ -446,59 +457,54 @@ void print_world()
 
 void calculate_metrics()
 {
+    aux_healthy += p_healthy;
+    aux_infected += p_infected;
+    aux_recovered += p_recovered;
+    aux_death += p_death;
+    p_healthy, p_infected, p_recovered, p_death = 0;
+    mean_death = aux_death / num_bach;
+    mean_infected = aux_infected / num_bach;
+    mean_recovered = aux_recovered / num_bach;
+    mean_healthy = aux_healthy / num_bach;
+    mean_RO = 0.0; // TODO
+    print_metrics();
+}
 
-    mean_death = (p_death + fallecidas) / num_bach;
-    mean_infected = (p_infected + contagiadas) / num_bach;
-    mean_recovered = (p_recovered + recuperadas) / num_bach;
-    mean_healthy = (p_healthy + sanas) / num_bach;
-    mean_RO = (p_RO + (RO / num_bach)) / num_bach;
 
-    p_death = fallecidas;
-    p_infected = contagiadas;
-    p_recovered = recuperadas;
-    p_healthy = sanas;
-    p_RO = RO;
-
-    fallecidas = 0;
-    RO = 0;
-
-    //Escribir en el fichero
-    FILE *fichero;
-    char nombre_fichero[] = "COVID.matricas";
-    fichero = fopen(nombre_fichero, "w");
-    if (fichero == NULL)
+void print_metrics() {
+    //Escribir en el arch_metrics
+    char arch_name[] = "COVID.metricas";
+    arch_metrics = fopen(arch_name, "wt");
+    if (arch_metrics == NULL)
     {
         printf("El fichero no se ha podido abrir para escritura.\n");
     }
-    // Se escribe en bloque los elementos del vector.
-    char linea[500] = "Numero Bach --> ";
-    char aux_linea[30] = " Media muertos --> ";
-    char aux[20];
-    sprintf(aux, "%d", num_bach);
-    strcat(linea, aux);
-    strcat(linea, aux_linea);
-    sprintf(aux, "%d", mean_death);
-    strcat(linea, aux);
-    char aux_linea_e[30] = " Media sanos --> ";
-    strcat(linea, aux_linea_e);
-    sprintf(aux, "%d", mean_healthy);
-    strcat(linea, aux);
-    char aux_linea_r[30] = " Media recuperados --> ";
-    strcat(linea, aux_linea_r);
-    sprintf(aux, "%d", mean_recovered);
-    strcat(linea, aux);
-    char aux_linea_t[30] = " Media contagiados --> ";
-    strcat(linea, aux_linea_t);
-    sprintf(aux, "%d", mean_infected);
-    strcat(linea, aux);
-    char aux_linea_y[30] = " Media RO --> ";
-    strcat(linea, aux_linea_y);
-    sprintf(aux, "%d", mean_RO);
-    strcat(linea, aux);
-
-    fwrite(linea, sizeof(char), 500, fichero);
-    if (fclose(fichero) != 0)
+    //fwrite(linea, sizeof(char), 500, arch_metrics);
+    printf("Nº sanas: %f | Nº contagiadas : %f | Nº recuperadas : %f | Nº fallecidas: %f| R0: %f \n",mean_healthy,mean_infected,mean_recovered,mean_death,mean_RO);
+    fprintf(arch_metrics,"Nº sanas: %f | Nº contagiadas : %f | Nº recuperadas : %f | Nº fallecidas: %f| R0: %f \n",mean_healthy,mean_infected,mean_recovered,mean_death,mean_RO);
+    if (fclose(arch_metrics) != 0)
     {
-        printf("No se ha podido cerrar el fichero.\n");
+        printf("No se ha podido cerrar el arch_metrics.\n");
     }
+}
+
+int calculate_age() {
+    const gsl_rng_type * T;
+    gsl_rng_env_setup();
+    struct timeval tv; 
+    gettimeofday(&tv,0);
+    unsigned long mySeed = tv.tv_sec + tv.tv_usec;
+    T = gsl_rng_default; 
+    r = gsl_rng_alloc (T);
+    gsl_rng_set(r, mySeed);
+    double sigma=1.0;
+    double u = gsl_rng_uniform(r); 
+    gsl_rng_free (r);
+    double aux=u*mu;
+    int auxa=aux;
+    return auxa;
+}
+
+void print_positions() {
+    
 }

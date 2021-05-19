@@ -21,8 +21,12 @@ float mean_death, mean_infected, mean_recovered, mean_healthy, mean_RO;
 int iter, posX, posY, i, j, k, position, seed, mu, alfa, beta;
 int num_persons_to_vaccine, group_to_vaccine, person_vaccinned, radius, vaccines_left;
 int id_contVaccined, idx_iter, cont_bach, id_contI, id_contNotI, cont_death, c_death_aux, c_healthy_aux, c_recovered_aux, c_infected_aux, RO;
-int bach, cont_bach, sanas, contagiadas, fallecidas, recuperadas, RO, num_bach;
+int bach, cont_bach, num_bach;
 int p_death, p_infected, p_recovered, p_healthy, p_RO;
+int aux_death, aux_infected, aux_recovered, aux_healthy, aux_RO;
+
+FILE *arch_metrics, *arch_positions;
+
 
 enum list
 {
@@ -52,6 +56,7 @@ typedef struct person
 index_t world[size_world][size_world];
 person_t create_person();
 person_t *l_person_infected, *l_person_notinfected, *l_vaccined;
+//int *l_count_healthy, *l_count_infected, *l_count_recovered, *l_count_death;
 
 void per_cicle();
 void change_state(person_t person);
@@ -67,10 +72,11 @@ void calculate_init_position(person_t *person);
 void print_world();
 void print_person(person_t person);
 void calculate_metrics();
-
+void print_metrics();
 float calculate_ageMean();
 float calculate_prob_death(int edad);
 int vacunate(person_t person);
 int random_number(int min_num, int max_num);
-
+int calculate_age();
+void free_structs();
 #endif // DEFINITIONS_H
