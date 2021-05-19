@@ -121,6 +121,7 @@ void per_cicle()
             cont_bach = 1;
             num_bach++;
             calculate_metrics();
+            save_positions(1,k);
         }
         else
         {
@@ -505,6 +506,23 @@ int calculate_age() {
     return auxa;
 }
 
-void print_positions() {
-    
+void save_positions(int world_rank, int iteration) {
+    printf("Imprimiendo positions \n");
+    char str[100];
+    strcpy(str, world_rank);
+    sprintf(str,"| %d | --> ",iteration);
+    for (i = 0; i < id_contI; i++) 
+    {
+        sprintf(str,"| %d[%d,%d]",l_person_infected[i].id, l_person_infected[i].coord[0],l_person_infected[i].coord[1]);
+    }aa
+    for (i = 0; i < id_contNotI; i++) 
+    {
+        sprintf(str,"| %d[%d,%d]",l_person_notinfected[i].id, l_person_notinfected[i].coord[0],l_person_notinfected[i].coord[1]);
+    }
+    for (i = 0; i < id_contVaccined; i++) 
+    {
+        sprintf(str,"| %d[%d,%d]",l_vaccined[i].id, l_vaccined[i].coord[0],l_vaccined[i].coord[1]);
+    }
+    printf(str);
+    //l_positions[num_bach] = str;
 }
