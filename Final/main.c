@@ -514,7 +514,7 @@ void save_positions(int world_rank, int iteration) {
     for (i = 0; i < id_contI; i++) 
     {
         sprintf(str,"| %d[%d,%d]",l_person_infected[i].id, l_person_infected[i].coord[0],l_person_infected[i].coord[1]);
-    }aa
+    }
     for (i = 0; i < id_contNotI; i++) 
     {
         sprintf(str,"| %d[%d,%d]",l_person_notinfected[i].id, l_person_notinfected[i].coord[0],l_person_notinfected[i].coord[1]);
