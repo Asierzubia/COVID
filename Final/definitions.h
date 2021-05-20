@@ -56,7 +56,7 @@ typedef struct person
 index_t world[size_world][size_world];
 person_t create_person();
 person_t *l_person_infected, *l_person_notinfected, *l_vaccined;
-char *l_positions;
+char *l_positions, *l_metrics;
 //int *l_count_healthy, *l_count_infected, *l_count_recovered, *l_count_death;
 
 void per_cicle();

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <stdbool.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include <math.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
@@ -48,9 +48,13 @@ int main(int argc, char *argv[])
     p_healthy = 0;
     p_RO = 0;
     ///----Matricas---///
+    printf("1\n");
     init_world();
+    printf("2\n");
     create_population();
+    printf("3\n");
     per_cicle();
+    printf("4\n");
     free_structs();
 }
 
@@ -76,7 +80,7 @@ void per_cicle()
         id_contIAux = id_contI;
         id_contNotIAux = id_contNotI;
 
-        for (i = 0; i < id_contIAux; i++) // INFECTED
+        /*for (i = 0; i < id_contIAux; i++) // INFECTED
         {
             if (l_person_infected[i].id != -1)
             {
@@ -115,13 +119,16 @@ void per_cicle()
                 }
             }
         }
-        print_world();
+        */
+        //print_world();
         if (cont_bach == BATCH)
         {
+            printf("Empieza prin \n");
             cont_bach = 1;
+            //calculate_metrics();
+            save_metrics(1,k);
+            save_positions(1, k);
             num_bach++;
-            calculate_metrics();
-            save_positions(1,k);
         }
         else
         {
@@ -130,14 +137,14 @@ void per_cicle()
     }
 }
 
-void free_structs() {
+void free_structs()
+{
     free(arch_metrics);
     free(arch_positions);
     free(l_person_infected);
     free(l_person_notinfected);
     free(l_vaccined);
     gsl_rng_free(r);
-
 }
 
 void change_state(person_t person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
@@ -462,67 +469,108 @@ void calculate_metrics()
     aux_infected += p_infected;
     aux_recovered += p_recovered;
     aux_death += p_death;
-    p_healthy, p_infected, p_recovered, p_death = 0;
-    mean_death = aux_death / num_bach;
-    mean_infected = aux_infected / num_bach;
-    mean_recovered = aux_recovered / num_bach;
-    mean_healthy = aux_healthy / num_bach;
+    p_healthy = 0;
+    p_infected = 0;
+    p_recovered = 0;
+    p_death = 0;
+
+    mean_death = aux_death / POPULATION_SIZE;
+    mean_infected = aux_infected / POPULATION_SIZE;
+    mean_recovered = aux_recovered / POPULATION_SIZE;
+    mean_healthy = aux_healthy / POPULATION_SIZE;
     mean_RO = 0.0; // TODO
-    print_metrics();
+    //print_metrics();
 }
 
+void save_metrics(int world_rank, int iteration)
+{
+    calculate_metrics();
+    char str[10000];
+    strcpy(str, (int) world_rank);
+    sprintf(str, "| %d | \n", iteration);
+    sprintf(str, "Nº sanas: %f | Nº contagiadas : %f | Nº recuperadas : %f | Nº fallecidas: %f| R0: %f \n", mean_healthy, mean_infected, mean_recovered, mean_death, mean_RO);
+    l_metrics[num_bach] = str;
+}
 
-void print_metrics() {
+void print_metrics()
+{
     //Escribir en el arch_metrics
     char arch_name[] = "COVID.metricas";
     arch_metrics = fopen(arch_name, "wt");
     if (arch_metrics == NULL)
     {
-        printf("El fichero no se ha podido abrir para escritura.\n");
+        printf("El fichero arch_metrics no se ha podido abrir para escritura.\n");
     }
-    //fwrite(linea, sizeof(char), 500, arch_metrics);
-    printf("Nº sanas: %f | Nº contagiadas : %f | Nº recuperadas : %f | Nº fallecidas: %f| R0: %f \n",mean_healthy,mean_infected,mean_recovered,mean_death,mean_RO);
-    fprintf(arch_metrics,"Nº sanas: %f | Nº contagiadas : %f | Nº recuperadas : %f | Nº fallecidas: %f| R0: %f \n",mean_healthy,mean_infected,mean_recovered,mean_death,mean_RO);
+
+    for (i = 0; i < num_bach; i++)
+    {
+        fprintf(arch_metrics, l_metrics[i]);
+    }
+
     if (fclose(arch_metrics) != 0)
     {
         printf("No se ha podido cerrar el arch_metrics.\n");
     }
+    free(arch_metrics);
 }
 
-int calculate_age() {
-    const gsl_rng_type * T;
-    gsl_rng_env_setup();
-    struct timeval tv; 
-    gettimeofday(&tv,0);
-    unsigned long mySeed = tv.tv_sec + tv.tv_usec;
-    T = gsl_rng_default; 
-    r = gsl_rng_alloc (T);
-    gsl_rng_set(r, mySeed);
-    double sigma=1.0;
-    double u = gsl_rng_uniform(r); 
-    gsl_rng_free (r);
-    double aux=u*mu;
-    int auxa=aux;
-    return auxa;
-}
-
-void save_positions(int world_rank, int iteration) {
-    printf("Imprimiendo positions \n");
-    char str[100];
-    strcpy(str, world_rank);
-    sprintf(str,"| %d | --> ",iteration);
-    for (i = 0; i < id_contI; i++) 
+void save_positions(int world_rank, int iteration)
+{
+    //printf("Imprimiendo positions \n");
+    char str[10000];
+    strcpy(str, (int) world_rank);
+    sprintf(str, "| %d | \n", iteration);
+    for (i = 0; i < id_contI; i++) // INFECTED
     {
-        sprintf(str,"| %d[%d,%d]",l_person_infected[i].id, l_person_infected[i].coord[0],l_person_infected[i].coord[1]);
+        sprintf(str, "| %d[%d,%d]", l_person_infected[i].id, l_person_infected[i].coord[0], l_person_infected[i].coord[1]);
     }
-    for (i = 0; i < id_contNotI; i++) 
+    for (i = 0; i < id_contNotI; i++) // NOT-INFECTED
     {
-        sprintf(str,"| %d[%d,%d]",l_person_notinfected[i].id, l_person_notinfected[i].coord[0],l_person_notinfected[i].coord[1]);
+        sprintf(str, "| %d[%d,%d]", l_person_notinfected[i].id, l_person_notinfected[i].coord[0], l_person_notinfected[i].coord[1]);
     }
-    for (i = 0; i < id_contVaccined; i++) 
+    for (i = 0; i < id_contVaccined; i++) // VACCINED
     {
-        sprintf(str,"| %d[%d,%d]",l_vaccined[i].id, l_vaccined[i].coord[0],l_vaccined[i].coord[1]);
+        sprintf(str, "| %d[%d,%d]", l_vaccined[i].id, l_vaccined[i].coord[0], l_vaccined[i].coord[1]);
     }
     printf(str);
-    //l_positions[num_bach] = str;
+    l_positions[num_bach] = str; // num_bach empieza en 0
+}
+
+void print_positions()
+{
+    char arch_name[] = "COVID.positions";
+    arch_positions = fopen(arch_name, "wt");
+    if (arch_positions == NULL)
+    {
+        printf("El fichero arch_positions no se ha podido abrir para escritura.\n");
+    }
+
+    for (i = 0; i < num_bach; i++)
+    {
+        fprintf(arch_positions, l_positions[i]);
+    }
+
+    if (fclose(arch_positions) != 0)
+    {
+        printf("No se ha podido cerrar el arch_positions.\n");
+    }
+    free(arch_positions);
+}
+
+int calculate_age()
+{
+    const gsl_rng_type *T;
+    gsl_rng_env_setup();
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    unsigned long mySeed = tv.tv_sec + tv.tv_usec;
+    T = gsl_rng_default;
+    r = gsl_rng_alloc(T);
+    gsl_rng_set(r, mySeed);
+    double sigma = 1.0;
+    double u = gsl_rng_uniform(r);
+    gsl_rng_free(r);
+    double aux = u * mu;
+    int auxa = aux;
+    return auxa;
 }
