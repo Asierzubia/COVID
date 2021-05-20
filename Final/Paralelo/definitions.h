@@ -12,7 +12,7 @@
 #define POPULATION_SIZE 100
 #define BATCH 2
 #define CUADRICULA 5
-#define ITER 1000
+#define ITER 10
 #define SEED 3
 
 
@@ -36,7 +36,6 @@ enum list
 
 typedef struct index
 {
-
     int id; // index
     enum list l;
 
@@ -102,5 +101,14 @@ int move_visitor(person_t *person, coord_t *coord);
 
 void send_visitors();
 void init_move_list(int size_x, int size_y);
+
+
+// Ficheros
+void print_positions();
+void save_positions(int world_rank, int iteration);
+void print_metrics();
+void save_metrics(int world_rank, int iteration);
+void calculate_metrics();
+char *init_list_archives(int size);
 
 #endif // DEFINITIONS_H
