@@ -9,10 +9,10 @@
 #define MAX_RECOVERY 10
 #define MAX_INFECTION 0.3 //0.6
 #define MAX_DEATH 200
-#define POPULATION_SIZE 100
+#define POPULATION_SIZE 300
 #define BATCH 2
 #define CUADRICULA 5
-#define ITER 1000
+#define ITER 10
 #define SEED 3
 
 
@@ -90,9 +90,9 @@ void realocate_lists();
 
 
 //Crear DataTypes
-void create_data_type_coord(coord_t *coordenadas, MPI_Datatype *tipo);
-void create_data_type_person(person_t *persona,MPI_Datatype *tipo, MPI_Datatype *coordenadas);
-void create_data_type_person_move(coord_t *coordenadas, person_t *persona,MPI_Datatype *person,MPI_Datatype *coord,MPI_Datatype *tipo);
+void create_data_type_coord(coord_t *coordenadas);
+void create_data_type_person(person_t *persona);
+void create_data_type_person_move(coord_t *coordenadas, person_t *persona);
 
 // Move
 int is_inside_world(int from, int direction, int to_node);
@@ -100,7 +100,18 @@ void move_person(person_t *person, int world_rank);
 void move(person_t *person, coord_t *coord);
 int move_visitor(person_t *person, coord_t *coord);
 
-void send_visitors();
+void send_visitors(int flag,MPI_Datatype *coord_type, MPI_Datatype *person_move);
 void init_move_list(int size_x, int size_y);
+
+
+//Send-Recive
+void Psend(int to_node,int flag);
+void recive(int flag);
+
+
+//MOver y propgar los nuevos
+
+void move_arrived();
+void propagate_arrived();
 
 #endif // DEFINITIONS_H
