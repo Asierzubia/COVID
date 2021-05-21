@@ -33,7 +33,7 @@ gsl_rng *r;
 int world_size, world_rank;
 
 FILE *arch_metrics, *arch_positions;
-char *l_positions, *l_metrics;
+char *l_positions, *l_metrics, *l_positions_aux, *l_metrics_aux, *recv_positions, *recv_metrics;
 
 int main(int argc, char *argv[])
 {
@@ -132,6 +132,9 @@ int main(int argc, char *argv[])
     l_vaccined = init_lists(population);
     l_metrics = init_list_archives(1024);
     l_positions = init_list_archives(1024);
+    recv_positions = malloc(10000 * world_size * sizeof(char));
+    recv_metrics = malloc(10000 * world_size * sizeof(char));
+
     //Crear la poblacion
     for (i = 0; i < population; i++)
     {
@@ -217,11 +220,32 @@ int main(int argc, char *argv[])
     }
     printf("Terminado el NODO %d", world_rank);
     //Solo imprimir las metricas al final de la ejecucion
+    MPI_Gather(l_positions, 10000, MPI_CHAR, recv_positions, 10000, MPI_CHAR, 0, MPI_COMM_WORLD);
+    MPI_Gather(l_metrics, 10000, MPI_CHAR, recv_metrics, 10000, MPI_CHAR, 0, MPI_COMM_WORLD);
     if (world_rank == 0)
     {
+        if ((l_positions_aux = malloc(10000 * world_size * sizeof(char))) == NULL)
+        {
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        sprintf(l_positions_aux, "%s", recv_positions);
+        for (i = 1; i < world_size; i++)
+        {
+            strcat(l_positions_aux, &recv_positions[10000 * i]);
+        }
+        if ((l_metrics_aux = malloc(10000 * world_size * sizeof(char))) == NULL)
+        {
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        sprintf(l_metrics_aux, "%s", recv_metrics);
+        for (i = 1; i < world_size; i++)
+        {
+            strcat(l_metrics_aux, &recv_metrics[10000 * i]);
+        }
         print_metrics();
         print_positions();
     }
+
 
     //Hacer free de las listas
     free(l_person_infected);
@@ -874,6 +898,7 @@ void save_metrics(int world_rank, int iteration)
     strcat(str, str_aux);
     snprintf(str_aux, sizeof(str_aux), "Nº sanas: %f | Nº contagiadas : %f | Nº recuperadas : %f | Nº fallecidas: %f| R0: %f \n", mean_healthy, mean_infected, mean_recovered, mean_death, mean_RO);
     strcat(str, str_aux);
+    strcat(str, "\n");
     if (num_bach == 3)
     {
         strcpy(l_metrics, str);
@@ -889,7 +914,7 @@ void print_metrics()
         printf("El fichero arch_metrics no se ha podido abrir para escritura.\n");
     }
 
-    fprintf(arch_metrics, l_metrics);
+    fprintf(arch_metrics, l_metrics_aux);
 
     if (fclose(arch_metrics) != 0)
     {
@@ -919,6 +944,7 @@ void save_positions(int world_rank, int iteration)
         snprintf(str_aux, sizeof(str_aux), "| %d[%d,%d]", l_vaccined[i].id_global, l_vaccined[i].coord.x, l_vaccined[i].coord.y);
         strcat(str, str_aux);
     }
+    strcat(str, "\n");
     //printf(">>>PRINT %s\n",str);
     if (num_bach == 3)
     {
@@ -940,8 +966,8 @@ void print_positions()
     // {
     //     // fprintf(arch_positions, l_positions[i]);
     // }
-    printf("%s", l_positions);
-    fprintf(arch_positions, l_positions);
+    printf("%s", l_positions_aux);
+    fprintf(arch_positions, l_positions_aux);
     printf("\n");
     if (fclose(arch_positions) != 0)
     {
