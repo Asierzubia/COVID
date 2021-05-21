@@ -418,6 +418,8 @@ void change_state(person_t person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
         }
     }
 }
+
+*/
 void propagate(person_t *person)
 {
     //Tengo que controlar que no se vayan del cuadrado
@@ -469,7 +471,7 @@ void propagate(person_t *person)
         }
     }
 }
-*/
+
 
 void move(person_t *person, coord_t *coord)
 {
