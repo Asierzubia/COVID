@@ -540,9 +540,7 @@ void move_person(person_t *person, int world_rank)
             {
                 printf("Visitante FROM %d | TO NODE -> %d | Qx %d Qy %d| Direccion %d | F X->%d Y->%d |X-> %d, Y->%d\n", world_rank, to_node, quadrant_x, quadrant_y, direction, person->coord.x, person->coord.y, x, y);
                 memcpy(&l_person_moved[to_node][l_cont_node[to_node]].person, person, sizeof(person_t));
-                //l_person_moved[to_node][l_cont_node[to_node]].person = *person;
                 memcpy(&l_person_moved[to_node][l_cont_node[to_node]].coord, &coord, sizeof(coord_t));
-                //l_person_moved[to_node][l_cont_node[to_node]].coord = *coord;
                 l_cont_node[to_node]++;
                 printf("Fin Visitante\n");
             }
@@ -894,12 +892,12 @@ void save_metrics(int world_rank, int iteration)
     calculate_metrics();
     char str[10000];
     char str_aux[1000];
-    snprintf(str_aux, sizeof(str_aux), " ITERACCION : %d | %d | \n", world_rank, iteration);
+    snprintf(str_aux, sizeof(str), "RANK : %d | ITERACCION: %d ", world_rank, iteration);
     strcat(str, str_aux);
     snprintf(str_aux, sizeof(str_aux), "Nº sanas: %f | Nº contagiadas : %f | Nº recuperadas : %f | Nº fallecidas: %f| R0: %f \n", mean_healthy, mean_infected, mean_recovered, mean_death, mean_RO);
     strcat(str, str_aux);
     strcat(str, "\n");
-    if (num_bach == 3)
+    if (num_bach == (BATCH/ITER)-1)
     {
         strcpy(l_metrics, str);
     }
@@ -907,7 +905,7 @@ void save_metrics(int world_rank, int iteration)
 
 void print_metrics()
 {
-    printf(">>>>>>>>>>>>>Imprimiendo metrics...\n");
+    printf(">Imprimiendo metrics...\n");
     arch_metrics = fopen("COVID.metricas", "w");
     if (arch_metrics == NULL)
     {
@@ -926,7 +924,7 @@ void save_positions(int world_rank, int iteration)
 {
     char str[100000];
     char str_aux[10000];
-    snprintf(str_aux, sizeof(str), " RANK : %d | ITERACCION: %d ", world_rank, iteration);
+    snprintf(str_aux, sizeof(str), "RANK : %d | ITERACCION: %d ", world_rank, iteration);
     strcat(str, str_aux);
     for (i = 0; i < id_contI; i++) // INFECTED
     {
@@ -948,27 +946,19 @@ void save_positions(int world_rank, int iteration)
     //printf(">>>PRINT %s\n",str);
     if (num_bach == 3)
     {
-        printf("COPIA");
         strcpy(l_positions, str);
     }
 }
 
 void print_positions()
 {
-    printf(">>>>>>>>>>>>>Imprimiendo positions...\n");
+    printf(">Imprimiendo positions...\n");
     arch_positions = fopen("COVID.positions", "w");
     if (arch_positions == NULL)
     {
         printf("El fichero arch_positions no se ha podido abrir para escritura.\n");
     }
-    printf("Num batch %d \n", num_bach);
-    // for (i = 0; i < num_bach-1; i++)
-    // {
-    //     // fprintf(arch_positions, l_positions[i]);
-    // }
-    printf("%s", l_positions_aux);
     fprintf(arch_positions, l_positions_aux);
-    printf("\n");
     if (fclose(arch_positions) != 0)
     {
         printf("No se ha podido cerrar el arch_positions.\n");
