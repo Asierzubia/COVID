@@ -22,9 +22,9 @@ int p_death, p_infected, p_recovered, p_healthy, p_RO;
 index_t **world;
 person_t *l_person_infected, *l_person_notinfected, *l_vaccined;
 person_move_t **l_person_moved;
-coord_t *l_person_propagate;
+coord_t **l_person_propagate;
 coord_t *l_person_propagate_recive;
-int *l_cont_node;
+int *l_cont_node_move,*l_cont_node_propagate;
 int PX, PY;
 int quadrant_x = 0;
 int quadrant_y = 0;
@@ -95,15 +95,16 @@ int main(int argc, char *argv[])
     MPI_Bcast(&num_persons_to_vaccine, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	PX=quadrant_x*(world_rank%(int)round(sqrt(world_size)));
 	PY=quadrant_y*(world_rank/(int)round(sqrt(world_size)));
-    printf("quadrant X -> %d, quadrant y -> %d\n",quadrant_x,quadrant_y);
+    printf("quadrant X -> %d, quadrant y -> %d | Population %d\n",quadrant_x,quadrant_y,population);
 
     identificador_global = world_rank * population;
     init_world(quadrant_x, quadrant_y);
     //Creo los DataTypes
 
-    l_cont_node = malloc(world_size*sizeof(int));
+    l_cont_node_move = malloc(world_size*sizeof(int));
+    l_cont_node_propagate = malloc(world_size*sizeof(int));
     for(i = 0 ; i<world_size;i++) {
-        l_cont_node[i] = 0;
+        l_cont_node_move[i] = 0;
     }
 
     //Ficticio
@@ -139,7 +140,7 @@ int main(int argc, char *argv[])
     }
     //Ahora que ya tenemos creado las listas,creadas las personas y el mundo empezamos las iteraciones
     init_move_list(world_size,quadrant_x*quadrant_y);
-
+    init_prop_list(world_size,quadrant_x*quadrant_y);
     for (k = 0; k < ITER; k++) // ITERACCIONES
     {
         if (cont_iterations >= when_change_group)
@@ -160,7 +161,7 @@ int main(int argc, char *argv[])
         {
             if (l_person_infected[i].id != -1)
             {
-                //change_state(l_person_infected[i]);
+                change_state(l_person_infected[i]);
                 if (l_person_infected[i].id != -1) // Ha cambiado de estado y no se mueve
                 {
                     change_move_prob(&l_person_infected[i]);
@@ -203,12 +204,17 @@ int main(int argc, char *argv[])
         //MPI_Barrier(MPI_COMM_WORLD);
         //send_visitors(0,&coord_type,&person_move);        
         //free(l_person_propagate_recive);
-        // MPI_Barrier(MPI_COMM_WORLD);
-        // send_visitors(1,&coord_type,&person_move);
+        //MPI_Barrier(MPI_COMM_WORLD);
+        //send_visitors(1,&coord_type,&person_move);
         //move_arrived();
         //propagate_arrived();        
         //free(lista_de_persona_mover);
-
+        for(i = 0; i < world_size;i++){
+           l_cont_node_move[i] = 0;
+        }
+        for(i = 0; i < world_size;i++){
+            l_cont_node_propagate[i] = 0;
+        }
         //Momento de mirar las personas que se han infectado o movido a cuadrantes de otro procesador
         if (cont_bach == BATCH)
         {
@@ -246,6 +252,7 @@ void move_arrived(){
 
     for(i = 0; i< cont_move_visitor;i++){
         if(world[lista_de_persona_mover[i].coord.x][lista_de_persona_mover[i].coord.y].id == -1){ //Esta libre el sitio
+            printf(" YESSS El P%d ha movido una persona a X -> %d Y -> %d\n",world_rank,lista_de_persona_mover[i].coord.x,lista_de_persona_mover[i].coord.y);
             //Lo meto en la lista correspondiente en base a si es infectado vacunado o no infectado
             if(lista_de_persona_mover[i].person.state == 0 || lista_de_persona_mover[i].person.state == 3){ //No esta infectado
                 memcpy(&l_person_notinfected[id_contNotI],&lista_de_persona_mover[i].person,sizeof(person_t));
@@ -270,9 +277,8 @@ void move_arrived(){
 
 void propagate_arrived(){
 
-    for(i = 0;i<cont_propagate_visitor;i++){
+    for(i = 0;i<world_size;i++){
         if(world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].x].id != -1){ //Hay alguien, por lo que la infecto
-            
             if(world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].x].l == NOT_INFECTED){ //Solo lo recorro si esta en no infectados
                 int id = world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].x].id;
                 if (l_person_notinfected[id].prob_infection > MAX_INFECTION) // Se infecta
@@ -313,107 +319,108 @@ void propagate_arrived(){
 
 void send_visitors(int flag,MPI_Datatype *coord_type, MPI_Datatype *person_move) {
     //printf("Ha entrado en Send_visitors\n");
+    //printf("Flag %d\n",flag);
+
     int nodo_a_enviar,contador;
     // 1-> Derecha
     nodo_a_enviar= world_rank+1;
-    flag = 0;
     if(PX + quadrant_x != SIZE_WORLD){ //Se pasa de la derecha
-        //printf("El P%d entrado en DERECHA ENVIAR --> PX : %d \n",world_rank,PX);
+        //if(flag == 1) printf("El P%d entrado en DERECHA ENVIAR --> PX : %d \n",world_rank,PX);
         Psend(nodo_a_enviar,flag);
     } 
     if(PX != 0){
-        //printf("El P%d entrado en DERECHA RECIVIR\n",world_rank);
+        //if(flag == 1)printf("El P%d entrado en DERECHA RECIVIR\n",world_rank);
         recive(flag);
     }
 
     // 2-> Arriba Derecha
     nodo_a_enviar = world_rank - ((SIZE_WORLD/quadrant_x)-1);
     if( PX + quadrant_x != SIZE_WORLD && PY - quadrant_y >= 0){
-        //printf("El P%d entrado en ARRIBA DERECHA ENVIAR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en ARRIBA DERECHA ENVIAR\n",world_rank);
         Psend(nodo_a_enviar,flag);
     } 
     if(PX != 0 && PY + quadrant_y != SIZE_WORLD){
-        //printf("El P%d entrado en ARRIBA DERECHA RECIVIR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en ARRIBA DERECHA RECIVIR\n",world_rank);
         recive(flag);
     }
     //3 -> Arriba
     nodo_a_enviar = world_rank - (SIZE_WORLD/quadrant_x);
     if(PY - quadrant_y >= 0){
-        //printf("El P%d entrado en ARRIBA ENVIAR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en ARRIBA ENVIAR\n",world_rank);
         Psend(nodo_a_enviar,flag);
     } 
     if(PY + quadrant_y != SIZE_WORLD){
-        //printf("El P%d entrado en ARRIBA RECIVIR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en ARRIBA RECIVIR\n",world_rank);
         recive(flag);
     }
     //4 -> Arriba Izquierda
     nodo_a_enviar = world_rank - ((SIZE_WORLD/quadrant_x)+1);
     if(PY - quadrant_y >= 0 && PX - quadrant_x >= 0 ){
-        //printf("El P%d entrado en ARRIBA IZQUIERDA ENVIAR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en ARRIBA IZQUIERDA ENVIAR\n",world_rank);
         Psend(nodo_a_enviar,flag);
     } 
     if(PX + quadrant_x != SIZE_WORLD && PY + quadrant_y != SIZE_WORLD ){
-        //printf("El P%d entrado en ARRIBA IZQUIERDA RECIVIR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en ARRIBA IZQUIERDA RECIVIR\n",world_rank);
         recive(flag);
     }
     //5 -> IZQUIERDA
     nodo_a_enviar = world_rank-1;
     if(PX != 0){
-        //printf("El P%d entrado en IZQUIERDA ENVIAR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en IZQUIERDA ENVIAR\n",world_rank);
         Psend(nodo_a_enviar,flag);
     } 
     if(PX + quadrant_x != SIZE_WORLD){
-        //printf("El P%d entrado en IZQUIERDA RECIVIR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en IZQUIERDA RECIVIR\n",world_rank);
         recive(flag);
     }
     //6 -> ABAJO IZQUIERDA
     nodo_a_enviar = world_rank+(SIZE_WORLD/quadrant_x) -1;
     if(PY + quadrant_y != SIZE_WORLD && PX != 0){
-        //printf("El P%d entrado en ABAJO IZQUIERDA ENVIAR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en ABAJO IZQUIERDA ENVIAR\n",world_rank);
         Psend(nodo_a_enviar,flag);
     } 
     if(PY != 0 && PX + quadrant_x != SIZE_WORLD){
-        //printf("El P%d entrado en ABAJO IZQUIERDA RECIBIR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en ABAJO IZQUIERDA RECIBIR\n",world_rank);
         recive(flag);
     }
     //7 -> ABAJO
     nodo_a_enviar = world_rank+(SIZE_WORLD/quadrant_x);
     if(PY + quadrant_y != SIZE_WORLD){
-        //printf("El P%d entrado en ABAJO ENVIAR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en ABAJO ENVIAR\n",world_rank);
         Psend(nodo_a_enviar,flag);
     } 
     if(PY != 0){
-        //printf("El P%d entrado en ABAJO RECIBIR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en ABAJO RECIBIR\n",world_rank);
         recive(flag);
     }
 
     // 8 -> ABAJO DERECHA
     nodo_a_enviar = world_rank + (SIZE_WORLD/quadrant_x) + 1;
     if(PX + quadrant_x != SIZE_WORLD && PY+quadrant_y != SIZE_WORLD){
-        printf("El P%d entrado en ABAJO DERECHA ENVIAR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en ABAJO DERECHA ENVIAR\n",world_rank);
         Psend(nodo_a_enviar,flag);
     } 
     if(PY != 0 && PX !=0){
-        printf("El P%d entrado en ABAJO DERECHA RECIBIR\n",world_rank);
+        //if(flag == 1) printf("El P%d entrado en ABAJO DERECHA RECIBIR\n",world_rank);
         recive(flag);
     }
 }
 
 void Psend(int to_node, int flag){
     
-    
     if(flag == 0){
-        printf("Nodo ");
-        MPI_Send(&l_cont_node[to_node],1,MPI_INT,to_node,0, MPI_COMM_WORLD);
-        printf("EL P%d ha enviado %d al P%d\n",world_rank,l_cont_node[to_node],to_node);
-        MPI_Send(&l_person_moved[to_node],l_cont_node[to_node],person_move,to_node,0, MPI_COMM_WORLD);
-        l_cont_node[to_node] = 0;
+        //printf("Contador Personas Movidas a enviar %d \n",l_cont_node_move[to_node]);
+        MPI_Send(&l_cont_node_move[to_node],1,MPI_INT,to_node,0, MPI_COMM_WORLD);
+        //printf("EL P%d ha enviado %d al P%d\n",world_rank,l_cont_node_move[to_node],to_node);
+        MPI_Send(&l_person_moved[to_node],l_cont_node_move[to_node],person_move,to_node,0, MPI_COMM_WORLD);
+        l_cont_node_move[to_node] = 0;
 
     }
     else
     {
+        //printf("Contador Personas a propagar a enviar %d \n",cont_propagate_visitor);
         MPI_Send(&cont_propagate_visitor,1,MPI_INT,to_node,0, MPI_COMM_WORLD);
-        printf("EL P%d ha enviado %d al P%d\n",world_rank,cont_propagate_visitor,to_node);
+        //printf("EL P%d ha enviado %d al P%d\n",world_rank,cont_propagate_visitor,to_node);
         MPI_Send(&l_person_propagate,cont_propagate_visitor,coord_type,to_node,0, MPI_COMM_WORLD);
         cont_propagate_visitor = 0;
     }
@@ -425,19 +432,21 @@ void recive(int flag){
     if(flag == 0){
 
         MPI_Recv(&cont_move_visitor, 1, MPI_INT, MPI_ANY_SOURCE,0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("EL P%d ha recivido del cont_move_visitor %d\n",world_rank,cont_move_visitor);
+        //printf("EL P%d ha recivido del cont_move_visitor %d\n",world_rank,cont_move_visitor);
         if(cont_move_visitor != 0){
            lista_de_persona_mover = malloc(cont_move_visitor*sizeof(person_move_t));
             MPI_Recv(&lista_de_persona_mover, cont_move_visitor, person_move, MPI_ANY_SOURCE,0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            //printf("EL P%d ha recivido una lista de personas\n",world_rank);
         }
     }
     else
     {
         MPI_Recv(&cont_propagate_visitor, 1, MPI_INT, MPI_ANY_SOURCE,0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("EL P%d ha recivido del cont_move_visitor %d\n",world_rank,cont_propagate_visitor);
+        //printf("EL P%d ha recivido del cont_propagate %d\n",world_rank,cont_propagate_visitor);
         if(cont_propagate_visitor != 0){
             l_person_propagate_recive = malloc(cont_propagate_visitor*sizeof(coord_t));
             MPI_Recv(&l_person_propagate_recive, cont_propagate_visitor, coord_type, MPI_ANY_SOURCE,0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            //printf("EL P%d ha recivido una lista de coordenadas\n",world_rank);
         }
     }
 }
@@ -485,7 +494,7 @@ void create_person(int procesador)
         init_person_parameters(&l_person_notinfected[id_contNotI], state, id_contNotI);
         world[l_person_notinfected[id_contNotI].coord.x][l_person_notinfected[id_contNotI].coord.y].l = NOT_INFECTED;
         id_contNotI++;
-        //print_person(l_person_notinfected[id_contNotI - 1], procesador);
+        print_person(l_person_notinfected[id_contNotI - 1], procesador);
     }
     else // INFECTADO
     {
@@ -493,7 +502,7 @@ void create_person(int procesador)
         init_person_parameters(&l_person_infected[id_contI], state, id_contI);
         world[l_person_infected[id_contI].coord.x][l_person_infected[id_contI].coord.y].l = INFECTED;
         id_contI++;
-        //print_person(l_person_infected[id_contI - 1], procesador);
+        print_person(l_person_infected[id_contI - 1], procesador);
     }
 
     identificador_global++;
@@ -547,7 +556,33 @@ void init_move_list(int size_x, int size_y)
     }
     
 }
-/*
+
+void init_prop_list(int size_x, int size_y)
+{
+    l_person_propagate = malloc(size_x * sizeof(coord_t *));
+    if (l_person_propagate == NULL)
+    {
+        fprintf(stderr, "Memory Allocation Failed\n");
+        exit(EXIT_FAILURE);
+    }
+    int i;
+    for (i = 0; i < size_x; i++)
+    {
+        l_person_propagate[i] = malloc(size_y * sizeof(coord_t));
+        if (l_person_propagate[i] == NULL)
+        {
+            fprintf(stderr, "Memory Allocation Failed\n");
+            exit(1);
+        }
+        for (j = 0; j < size_y; j++)
+        {
+            l_person_propagate[i][j].x = -1;
+            l_person_propagate[i][j].y = -1;
+        }
+    }
+    
+}
+
 void change_state(person_t person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
 {
     if (person.incubation_period > 0)
@@ -575,6 +610,7 @@ void change_state(person_t person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
         }
     }
 }
+
 void propagate(person_t *person)
 {
     //Tengo que controlar que no se vayan del cuadrado
@@ -586,50 +622,73 @@ void propagate(person_t *person)
     float prob_aux;
     for (i = 0; i < 12; i++) // Todas las direcciones
     {
-        if ((x + directions[i][0]) < SIZE_WORLD && (y + directions[i][1]) < SIZE_WORLD) // Mantenerse dentro
+        if ((x + directions[i][0]) < quadrant_x && (y + directions[i][1]) < quadrant_y && (y + directions[i][1]) >= 0 && (x + directions[i][0]) >= 0) // Mantenerse dentro
         {
-            index = world[x + directions[i][0]][y + directions[i][1]];
-            if (index.id != -1 && index.l == NOT_INFECTED) // Persona no infectada y asignada
-            {
-                person_aux = l_person_notinfected[index.id];
-                change_infection_prob(&person_aux);
-                if (person_aux.prob_infection > MAX_INFECTION) // Se infecta
+            if(x >= 0 && y >= 0){
+
+            
+                memcpy(&index,&world[x + directions[i][0]][y + directions[i][1]],sizeof(index_t ));
+                if (index.id != -1 && index.l == NOT_INFECTED) // Persona no infectada y asignada
                 {
-                    l_person_notinfected[person_aux.id].id = -1;
-                    prob_aux = 1000 * calculate_prob_death(person_aux.age);
-                    if (random_number(0, MAX_DEATH) <= prob_aux) // MUERE
+                    printf("P%d EL index ID es -> %d\n",world_rank,index.id);
+                    //printf("P%d l_person -> %d\n",world_rank,l_person_notinfected[index.id].id);
+                    if(index.id >= id_contNotI) printf("Falla IDCONT ->%d ID ->%d\n",id_contNotI,index.id);
+                    //memcpy(&person_aux,&l_person_notinfected[index.id],sizeof(person_t));
+                    //print_person(person_aux,world_rank);
+                    change_infection_prob(&l_person_notinfected[index.id]);
+                    if (l_person_notinfected[index.id].prob_infection > MAX_INFECTION) // Se infecta
                     {
-                        printf(">>>>>%d HA MUERTO!\n", person_aux.id);
-                        person_aux.state = 5;
-                        world[x + directions[i][0]][y + directions[i][1]].id = -1;
-                        cont_death++;
-                    }
-                    else
-                    {
-                        printf(">>>>>%d SE HA INFECTADO!\n", person_aux.id);
-                        if (random_number(0, 1) == 0) // INFECCIOSO
+                        //printf("Person -> %d y el contado -> %d\n",index.id,id_contNotI);
+                        //for(j = 0;j < id_contNotI;j++) printf("ID -> %d\n",l_person_notinfected[j].id);
+                        l_person_notinfected[index.id].id = -1;
+                        prob_aux = 1000 * calculate_prob_death(l_person_notinfected[index.id].age);
+                        if (random_number(0, MAX_DEATH) <= prob_aux) // MUERE
                         {
-                            person_aux.state = 2;
+                            printf(">>>>>%d HA MUERTO!\n", l_person_notinfected[index.id].id);
+                            l_person_notinfected[index.id].state = 5;
+                            world[x + directions[i][0]][y + directions[i][1]].id = -1;
+                            cont_death++;
                         }
                         else
                         {
-                            person_aux.state = 1;
+                            printf(">>>>>%d SE HA INFECTADO!\n", person_aux.id);
+                            if (random_number(0, 1) == 0) // INFECCIOSO
+                            {
+                                l_person_notinfected[index.id].state = 2;
+                            }
+                            else
+                            {
+                                l_person_notinfected[index.id].state = 1;
+                            }
+                            l_person_notinfected[index.id].id = id_contI;
+                            l_person_infected[id_contI] = l_person_notinfected[index.id];
+                            world[x + directions[i][0]][y + directions[i][1]].l = INFECTED;
+                            world[x + directions[i][0]][y + directions[i][1]].id = id_contI;
+                            l_person_notinfected[index.id].id = -1;
+                            id_contI++;
                         }
-                        person_aux.id = id_contI;
-                        l_person_infected[id_contI] = person_aux;
-                        world[x + directions[i][0]][y + directions[i][1]].l = INFECTED;
-                        world[x + directions[i][0]][y + directions[i][1]].id = id_contI;
-                        id_contI++;
                     }
                 }
             }
         }
+        /*else
+        {
+            int to_node = search_node(world_rank, x, y);
+            if (to_node != -1) // SE PUEDE
+            {
+                coord_t coord = calculate_coord(x,y);
+                printf("To Node -> %d\n", to_node);
+                memcpy(&l_person_propagate[to_node][l_cont_node_propagate[to_node]], &coord, sizeof(coord_t));
+                l_cont_node_propagate[to_node]++;
+            }
+        }*/
     }
 }
-*/
+
 
 void move(person_t *person, coord_t *coord)
 {
+    //printf("Entra al move con coordenadas X -> %d Y -> %d\n",coord->x,coord->y);
     world[coord->x][coord->y].id = person->id;
     if (person->state == 1 || person->state == 2)
     {
@@ -650,6 +709,7 @@ void move(person_t *person, coord_t *coord)
 
 void move_person(person_t *person, int world_rank)
 {
+
     int x = person->coord.x;
     int y = person->coord.y;
     int nx, ny;
@@ -676,7 +736,7 @@ void move_person(person_t *person, int world_rank)
         coord.x = x;
         coord.y = y;
         //printf("Antes del if general | Qx %d Qy %d| Direccion %d | X-> %d, Y->%d\n",quadrant_x,quadrant_y,direction,x,y);
-        if (x < quadrant_x && y < quadrant_y)  // MISMO QUADRANTE
+        if (x < quadrant_x && y < quadrant_y )  // MISMO QUADRANTE
         {
             if(x >= 0 && y >= 0){
                 if (world[x][y].id == -1) // EMPTY POSITION
@@ -694,14 +754,15 @@ void move_person(person_t *person, int world_rank)
             //printf("Despues de search FROM %d | TO NODE -> %d | Qx %d Qy %d| Direccion %d | F X->%d Y->%d |X-> %d, Y->%d\n",world_rank,to_node,quadrant_x,quadrant_y,direction,person->coord.x,person->coord.y,x,y);
             if(to_node != -1) // SE PUEDE
             {
-                printf("To Node -> %d\n",to_node);
+                coord = calculate_coord(x,y);
+                //printf("To Node -> %d\n",to_node);
                 //printf("Visitante FROM %d | TO NODE -> %d | Qx %d Qy %d| Direccion %d | F X->%d Y->%d |X-> %d, Y->%d\n",world_rank,to_node,quadrant_x,quadrant_y,direction,person->coord.x,person->coord.y,x,y);
-                memcpy(&l_person_moved[to_node][l_cont_node[to_node]].person,person,sizeof (person_t));
-                //l_person_moved[to_node][l_cont_node[to_node]].person = *person;
-                memcpy(&l_person_moved[to_node][l_cont_node[to_node]].coord,&coord,sizeof (coord_t));
-                //l_person_moved[to_node][l_cont_node[to_node]].coord = *coord;
-                //l_cont_node[to_node] = l_cont_node[to_node] + 1;
-                printf("Fin Visitante\n");
+                memcpy(&l_person_moved[to_node][l_cont_node_move[to_node]].person,&person,sizeof (person_t));
+                //l_person_moved[to_node][l_cont_node_move[to_node]].person = *person;
+                memcpy(&l_person_moved[to_node][l_cont_node_move[to_node]].coord,&coord,sizeof (coord_t));
+                //l_person_moved[to_node][l_cont_node_move[to_node]].coord = *coord;
+                l_cont_node_move[to_node] = l_cont_node_move[to_node] + 1;
+                //printf("P%d ha aumentadp el contador de P%d\n a el valor %d\n",world_rank,to_node,l_cont_node_move[to_node]);
             }
         }
     }
@@ -770,49 +831,49 @@ int is_inside_world(int from, int direction, int to_node)
     case 1:
         if (from % (SIZE_WORLD / quadrant_x) == ((SIZE_WORLD / quadrant_x) - 1))
         {
-            printf("Caso 1 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
+            //printf("Caso 1 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
             return 0;
         }
         break;
     case 2:
         if (from % (SIZE_WORLD / quadrant_x) == ((SIZE_WORLD / quadrant_x) - 1) || from < (SIZE_WORLD / quadrant_x))
         {
-            printf("Caso 2 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
+            //printf("Caso 2 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
             return 0;
         }
         break;
     case 3:
         if (from < (SIZE_WORLD / quadrant_x))
         {
-            printf("Caso 3 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
+            //printf("Caso 3 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
             return 0;
         }
         break;
     case 4:
         if (from % (SIZE_WORLD / quadrant_x) == 0 || from > quadrant_x)
         {
-            printf("Caso 4 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
+            //printf("Caso 4 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
             return 0;
         }
         break;
     case 5:
         if (from % (SIZE_WORLD / quadrant_x) == 0)
         {
-            printf("Caso 5 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
+            //printf("Caso 5 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
             return 0;
         }
         break;
     case 6:
         if (from % (SIZE_WORLD / quadrant_x) == 0 || to_node >= world_size)
         {
-            printf("Caso 6 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
+            //printf("Caso 6 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
             return 0;
         }
         break;
     case 7:
         if (to_node >= world_size)
         {
-            printf("Caso 7 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
+            //printf("Caso 7 | From %d| Direction %d| To Node %d|\n",from,direction,to_node);
             return 0;
         }
         break;
@@ -1039,4 +1100,27 @@ float calculate_prob_death(int edad)
         }
     }
     return 0.0;
+}
+
+coord_t calculate_coord(int x, int y) {
+    coord_t coord;
+    coord.x = x;
+    coord.y = y;
+    if (x<0)
+    {
+        coord.x = quadrant_x + x;
+    }else if (x>=quadrant_x)
+    {
+        coord.x = x - quadrant_x;
+    }
+
+    if (y<0)
+    {
+        coord.y = quadrant_y + y;
+    }else if (y>=quadrant_y)
+    {
+        coord.y = y - quadrant_y;
+    }
+
+    return coord;
 }

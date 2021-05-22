@@ -9,10 +9,10 @@
 #define MAX_RECOVERY 10
 #define MAX_INFECTION 0.3 //0.6
 #define MAX_DEATH 200
-#define POPULATION_SIZE 300
+#define POPULATION_SIZE 10
 #define BATCH 2
 #define CUADRICULA 5
-#define ITER 10
+#define ITER 1
 #define SEED 3
 
 
@@ -102,7 +102,7 @@ int move_visitor(person_t *person, coord_t *coord);
 
 void send_visitors(int flag,MPI_Datatype *coord_type, MPI_Datatype *person_move);
 void init_move_list(int size_x, int size_y);
-
+void init_prop_list(int size_x, int size_y);
 
 //Send-Recive
 void Psend(int to_node,int flag);
@@ -114,4 +114,5 @@ void recive(int flag);
 void move_arrived();
 void propagate_arrived();
 
+coord_t calculate_coord(int x, int y);
 #endif // DEFINITIONS_H
