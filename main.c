@@ -246,6 +246,8 @@ int main(int argc, char *argv[])
         {
             strcat(l_metrics_aux, &recv_metrics[10000 * i]);
         }
+	print_metrics();
+        print_positions();
     }
 
     //Hacer free de las listas
@@ -1143,3 +1145,38 @@ void calculate_metrics()
     mean_healthy = aux_healthy / POPULATION_SIZE;
     mean_RO = 0.0; // TODO
 }
+
+void print_positions()
+{
+    printf(">Imprimiendo positions...\n");
+    arch_positions = fopen("Positions.positions", "w");
+    if (arch_positions == NULL)
+    {
+        printf("El fichero arch_positions no se ha podido abrir para escritura.\n");
+    }
+    fprintf(arch_positions, l_positions_aux);
+    if (fclose(arch_positions) != 0)
+    {
+        printf("No se ha podido cerrar el arch_positions.\n");
+    }
+}
+
+void print_metrics()
+{
+    printf(">Imprimiendo metrics...\n");
+    arch_metrics = fopen("Metricas.metricas", "w");
+    if (arch_metrics == NULL)
+    {
+        printf("El fichero arch_metrics no se ha podido abrir para escritura.\n");
+    }
+
+    fprintf(arch_metrics, l_metrics_aux);
+
+    if (fclose(arch_metrics) != 0)
+    {
+        printf("No se ha podido cerrar el arch_metrics.\n");
+    }
+}
+
+
+
