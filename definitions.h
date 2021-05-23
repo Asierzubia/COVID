@@ -99,7 +99,7 @@ int is_inside_world(int from, int direction, int to_node);
 void move_person(person_t *person, int world_rank);
 void move(person_t *person, coord_t *coord);
 
-void send_visitors(int flag,MPI_Datatype *coord_type, MPI_Datatype *person_move);
+void send_visitors(int flag);
 void init_move_list(int size_x, int size_y);
 void init_prop_list(int size_x, int size_y);
 
