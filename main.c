@@ -191,12 +191,12 @@ int main(int argc, char *argv[])
         }
 
         MPI_Barrier(MPI_COMM_WORLD);
-        send_visitors(0,&coord_type,&person_move);  
+        send_visitors(0);  
         free(l_person_moved);      
         init_move_list(world_size,quadrant_x*quadrant_y);
         init_prop_list(world_size,quadrant_x*quadrant_y);
         MPI_Barrier(MPI_COMM_WORLD);
-        send_visitors(1,&coord_type,&person_move);
+        send_visitors(1);
         move_arrived();
         propagate_arrived();
         free(l_person_propagate_recive);
@@ -334,7 +334,7 @@ void propagate_arrived(){
     }
 }
 
-void send_visitors(int flag,MPI_Datatype *coord_type, MPI_Datatype *person_move) {
+void send_visitors(int flag) {
     
 
     int nodo_a_enviar,contador;
