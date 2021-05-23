@@ -9,7 +9,7 @@
 #define MAX_RECOVERY 10
 #define MAX_INFECTION 0.3 //0.6
 #define MAX_DEATH 200
-#define POPULATION_SIZE 10
+#define POPULATION_SIZE 200
 #define BATCH 2
 #define CUADRICULA 5
 #define ITER 1
@@ -98,7 +98,6 @@ void create_data_type_person_move(coord_t *coordenadas, person_t *persona);
 int is_inside_world(int from, int direction, int to_node);
 void move_person(person_t *person, int world_rank);
 void move(person_t *person, coord_t *coord);
-int move_visitor(person_t *person, coord_t *coord);
 
 void send_visitors(int flag,MPI_Datatype *coord_type, MPI_Datatype *person_move);
 void init_move_list(int size_x, int size_y);
@@ -109,10 +108,18 @@ void Psend(int to_node,int flag);
 void recive(int flag);
 
 
-//MOver y propgar los nuevos
+//Mover y propgar los nuevos
 
 void move_arrived();
 void propagate_arrived();
 
 coord_t calculate_coord(int x, int y);
+
+// Ficheros
+void print_positions();
+void save_positions(int world_rank, int iteration);
+void print_metrics();
+void save_metrics(int world_rank, int iteration);
+void calculate_metrics();
+char *init_list_archives(int size);
 #endif // DEFINITIONS_H
