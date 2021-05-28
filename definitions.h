@@ -12,7 +12,7 @@
 #define POPULATION_SIZE 60
 #define BATCH 2
 #define CUADRICULA 5
-#define ITER 11
+#define ITER 10
 #define SEED 3
 
 /*Estructuras*/
@@ -69,13 +69,11 @@ typedef struct person_move
 /*Funciones*/
 
 void print_world(int worldRank);
-void init_world(int size_x, int size_y);
-void init_gsl(int seed);
+
 void create_person(int procesador);
 int random_number(int min_num, int max_num);
 void print_person(person_t *p, int procesador,char lista);
 void calculate_init_position(person_t *person);
-void init_person_parameters(person_t *persona, int state, int id_local);
 person_t *init_lists(int pop);
 int vacunate(person_t *person);
 void change_move_prob(person_t *person);
@@ -89,6 +87,26 @@ void move(person_t *person, coord_t *coord);
 int is_inside_world(int from, int direction, int to_node);
 int search_node(int world_rank, int x, int y);
 
-void init_move_list(int size_x, int size_y);
 void free_move_list();
+void free_prop_list();
+void move_arrived();
+
+void send_visitors(int flag);
+void Psend(int to_node, int flag);
+void recive(int flag);
+
+void create_data_type_coord(coord_t *coordenadas);
+void create_data_type_person(person_t *persona);
+void create_data_type_person_move(coord_t *coordenadas, person_t *persona);
+
+void init_world(int size_x, int size_y);
+void init_gsl(int seed);
+void init_person_parameters(person_t *persona, int state, int id_local);
+void init_prop_list(int size_x, int size_y);
+void init_move_list(int size_x, int size_y);
+
+
+void propagate_arrived();
+float calculate_prob_death(int edad);
+
 #endif // DEFINITIONS_H
