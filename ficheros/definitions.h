@@ -1,10 +1,10 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 
-#define SIZE_WORLD 30
+#define SIZE_WORLD 16
 #define PERCENT 0.05
 #define MAX_SPEED 2
-#define MAX_DIRECTION 8
+#define MAX_DIRECTION 7
 #define MAX_INCUBATION 5
 #define MAX_RECOVERY 10
 #define MAX_INFECTION 0.3 //0.6
@@ -12,7 +12,7 @@
 #define POPULATION_SIZE 10
 #define BATCH 2
 #define CUADRICULA 5
-#define ITER 50
+#define ITER 1
 #define SEED 3
 
 
@@ -42,12 +42,18 @@ typedef struct index
 
 } index_t;
 
+typedef struct coord
+{
+    int x;
+    int y;
+} coord_t;
+
 typedef struct person
 {
     int age;
     int state;
     float prob_infection;
-    int coord[2];
+    coord_t coord;
     int speed[2]; // 0 direction 1 speed
     int incubation_period;
     int recovery;
@@ -55,9 +61,14 @@ typedef struct person
     int id_global;
 } person_t;
 
+typedef struct person_move
+{
+    person_t person;
+    coord_t coord;
+} person_move_t;
+
+
 void create_person(int procesador);
-//person_t *l_person_infected, *l_person_notinfected, *l_vaccined;
-void create_data_type(person_t *persona,MPI_Datatype *tipo);
 void per_cicle();
 void change_state(person_t person);
 void propagate(person_t *person);
@@ -66,9 +77,6 @@ void init_gsl();
 void change_move_prob(person_t *person);
 void change_infection_prob(person_t *person);
 void init_world();
-void move_person(person_t *person, int world_rank);
-void move(person_t *person, coord *coord);
-int move_visitor(person_t *person, coord *coord)
 void calculate_init_position(person_t *person);
 void print_world();
 void print_person(person_t person,int procesador);
@@ -79,8 +87,32 @@ float calculate_prob_death(int edad);
 int vacunate(person_t person);
 int random_number(int min_num, int max_num);
 void realocate_lists();
-int is_inside_world(int from, int direction, int to_node)
-int search_node(int world_rank, int x, int y);
-void print_person_especial(person_t p,int procesador);
 
+
+//Crear DataTypes
+void create_data_type_coord(coord_t *coordenadas);
+void create_data_type_person(person_t *persona);
+void create_data_type_person_move(coord_t *coordenadas, person_t *persona);
+
+// Move
+int is_inside_world(int from, int direction, int to_node);
+void move_person(person_t *person, int world_rank);
+void move(person_t *person, coord_t *coord);
+int move_visitor(person_t *person, coord_t *coord);
+
+void send_visitors(int flag,MPI_Datatype *coord_type, MPI_Datatype *person_move);
+void init_move_list(int size_x, int size_y);
+void init_prop_list(int size_x, int size_y);
+
+//Send-Recive
+void Psend(int to_node,int flag);
+void recive(int flag);
+
+
+//MOver y propgar los nuevos
+
+void move_arrived();
+void propagate_arrived();
+
+coord_t calculate_coord(int x, int y);
 #endif // DEFINITIONS_H
