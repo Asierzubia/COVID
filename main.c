@@ -37,6 +37,11 @@ int quadrant_x;
 int quadrant_y;
 int contador;
 
+int cont_iter; // ELIMINAR
+
+FILE *arch_metrics, *arch_positions;
+char *l_positions, *l_metrics, *l_positions_aux, *l_metrics_aux, *recv_positions, *recv_metrics;
+
 MPI_Datatype coord_type;
 MPI_Datatype person_type;
 MPI_Datatype person_move;
@@ -68,8 +73,8 @@ int main(int argc, char *argv[])
     init_gsl(seed);
     cont_move_visitor = 0;
     cont_propagate_visitor = 0;
-
-    
+    num_bach=0;
+    cont_iter = 0;
 
     //Ficticio
     person_t persona_virtual;
@@ -117,7 +122,10 @@ int main(int argc, char *argv[])
     l_vaccined = init_lists((quadrant_x*quadrant_y)*10*BATCH);
     l_cont_node_move = malloc(world_size*sizeof(int));
     l_cont_node_propagate = malloc(world_size*sizeof(int));
-
+    l_metrics = init_list_archives(1024);
+    l_positions = init_list_archives(1024);
+    recv_positions = malloc(10000 * world_size * sizeof(char));
+    recv_metrics = malloc(10000 * world_size * sizeof(char));
     for(i = 0; i < world_size;i++) l_cont_node_move[i] = 0;
     
 
@@ -131,7 +139,7 @@ int main(int argc, char *argv[])
         create_person(world_rank);
     }
     
-
+    print_lists(world_rank);
     for (k = 0; k < ITER; k++) // ITERACCIONES
     {
         init_move_list(world_size,quadrant_x*quadrant_y);
@@ -149,7 +157,6 @@ int main(int argc, char *argv[])
         {
             cont_iterations++;
         }
-
         vaccines_left = num_persons_to_vaccine;
         id_contIAux = id_contI;
         id_contNotIAux = id_contNotI;
@@ -195,13 +202,13 @@ int main(int argc, char *argv[])
             }
         }
 
-        //MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);
         send_visitors(0);
-        //MPI_Barrier(MPI_COMM_WORLD);
-        //send_visitors(1);
-        // //Tratar las listas de personas y coordenadas recividas
+        MPI_Barrier(MPI_COMM_WORLD);
+        send_visitors(1);
+        //Tratar las listas de personas y coordenadas recividas
 
-        // move_arrived();
+        move_arrived();
         //propagate_arrived();
 
         free(lista_de_persona_mover);
@@ -217,23 +224,47 @@ int main(int argc, char *argv[])
             l_cont_node_move[i] = 0;
             l_cont_node_propagate[i] = 0;
         }
-
         
         if (cont_bach == BATCH)
         {
             cont_bach = 1;
-            //save_metrics(world_rank, k);
-            //save_positions(world_rank, k);
-            realocate_lists();
-
+            save_metrics(world_rank, k);
+            save_positions(world_rank, k);
+            //realocate_lists();
+            num_bach++;
         }
         else
         {
             cont_bach++;
         }
+        cont_iter++; // ELIMINAR
     }
 
-    
+    MPI_Gather(l_positions, 10000, MPI_CHAR, recv_positions, 10000, MPI_CHAR, 0, MPI_COMM_WORLD);
+    MPI_Gather(l_metrics, 10000, MPI_CHAR, recv_metrics, 10000, MPI_CHAR, 0, MPI_COMM_WORLD);
+    if (world_rank == 0)
+    {
+        if ((l_positions_aux = malloc(10000 * world_size * sizeof(char))) == NULL)
+        {
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        sprintf(l_positions_aux, "%s", recv_positions);
+        for (i = 1; i < world_size; i++)
+        {
+            strcat(l_positions_aux, &recv_positions[10000 * i]);
+        }
+        if ((l_metrics_aux = malloc(10000 * world_size * sizeof(char))) == NULL)
+        {
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        sprintf(l_metrics_aux, "%s", recv_metrics);
+        for (i = 1; i < world_size; i++)
+        {
+            strcat(l_metrics_aux, &recv_metrics[10000 * i]);
+        }
+	    print_metrics();
+        print_positions();
+    }
 
     free(l_person_infected);
     free(l_person_notinfected);
@@ -404,7 +435,7 @@ void Psend(int to_node, int flag){
         MPI_Send(&l_cont_node_move[to_node],1,MPI_INT,to_node,0, MPI_COMM_WORLD);
         if(l_cont_node_move[to_node] > 0){
             MPI_Send(l_person_moved[to_node],l_cont_node_move[to_node],person_move,to_node,0, MPI_COMM_WORLD);
-            printf("Contador enviado -> %d\n",l_cont_node_move[to_node]);
+            //printf("Contador enviado -> %d\n",l_cont_node_move[to_node]);
         }
         
     }
@@ -426,7 +457,7 @@ void recive(int flag){
 
         if(cont_move_visitor > 0){
             MPI_Recv(&lista_de_persona_mover[contador], cont_move_visitor, person_move, MPI_ANY_SOURCE,0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-            printf("Contador recivido -> %d\n",cont_move_visitor);
+            //printf("Contador recivido -> %d\n",cont_move_visitor);
             contador = contador + cont_move_visitor;
         }
     }
@@ -470,15 +501,15 @@ void move_arrived(){
 
 void print_lists(int world_rank){
 
-    printf("---INFECTADOS-----\n");
+    //printf("---INFECTADOS-----\n");
     for(i = 0;i<id_contI;i++){
         print_person(&l_person_infected[i],world_rank,'i');
     }
-    printf("---NO INFECTADOS-----\n");
+    //printf("---NO INFECTADOS-----\n");
     for(i = 0;i<id_contNotI;i++){
         print_person(&l_person_notinfected[i],world_rank,'n');
     }
-    printf("---VACUNADOS-----\n");
+    //printf("---VACUNADOS-----\n");
     for(i = 0;i<id_contVaccined;i++){
         print_person(&l_vaccined[i],world_rank,'v');
     }
@@ -675,6 +706,8 @@ void move_person(person_t *person, int world_rank)
                 {
                     //printf("Mismo cuadrante X-> %d, Y->%d\n",x,y);
                     world[person->coord.x][person->coord.y].id = -1; // Se elimina la anterior pos
+                    printf("[MOVE]: Rank : %d Iter : %d | {LOCAL} | ID : %d | ID_Global : %d | Actual : [%d,%d] | Nueva [%d,%d] | Speed [%d,%d]\n",
+                            world_rank, cont_iter,person->id, person->id_global, person->coord.x, person->coord.y, x, y, person->speed[0],person->speed[1]);
                     move(person, &coord);
                 }
             }
@@ -686,6 +719,8 @@ void move_person(person_t *person, int world_rank)
             {
                 coord = calculate_coord(x,y);
                 if(to_node < world_size && to_node>=0){
+                    printf("[MOVE]: Rank : %d Iter : %d | {VISITANTE->%d} | ID : %d | ID_Global : %d | Actual : [%d,%d] | Nueva [%d,%d] | Speed [%d,%d]\n",
+                            world_rank, cont_iter, to_node, person->id, person->id_global, person->coord.x, person->coord.y, x, y, person->speed[0],person->speed[1]);
                     //printf("Person ID -> %d\n",person->id);
                     memcpy(&l_person_moved[to_node][l_cont_node_move[to_node]].person,person,sizeof(person_t));
                     memcpy(&l_person_moved[to_node][l_cont_node_move[to_node]].coord,&coord,sizeof(coord_t));
@@ -713,9 +748,10 @@ void change_state(person_t *person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
     }
     else
     {
-        if (person->recovery == 0)
+        if (person->recovery == 0) // INMUNIZADO
         {
-            //printf("La persona con id-global %d ha cambiado de estado\n",person->id_global);
+            printf("La persona con id-global %d ha cambiado de estado\n",person->id_global);
+            l_person_infected[person->id].id = -1;
             person->state = 3;
             person->incubation_period = random_number(3, 5);
             person->recovery = random_number(3, 5);
@@ -723,10 +759,9 @@ void change_state(person_t *person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
             memcpy(&l_vaccined[id_contVaccined],person,sizeof(person_t));
             world[person->coord.x][person->coord.y].l = VACCINED;
             world[person->coord.x][person->coord.y].id = id_contVaccined;
-            person->id = -1;
             id_contVaccined++;
         }
-        else
+        else // PROPAGA
         {
             person->recovery--;
             if (person->state == 2)
@@ -741,11 +776,11 @@ int vacunate(person_t *person)
 {
     if (person->age >= group_to_vaccine * 10)
     {
-        printf(">>>>>%d VACUNADO!\n", person->id_global);
+        printf("[VACUNAR]: %d\n", person->id_global);
+        l_person_notinfected[person->id].id = -1;
         person->state = 4;
         person->id = id_contVaccined;
         memcpy(&l_vaccined[id_contVaccined],person,sizeof(person_t));
-        person->id = -1;
         world[person->coord.x][person->coord.y].l = VACCINED;
         world[person->coord.x][person->coord.y].id = id_contVaccined;
         id_contVaccined++;
@@ -785,6 +820,12 @@ void init_world(int size_x, int size_y)
             world[i][j].id = -1;
         }
     }
+}
+
+char *init_list_archives(int size)
+{
+    char *result = malloc(size * sizeof(char));
+    return result;
 }
 
 void print_person(person_t *p, int procesador,char lista)
@@ -1058,7 +1099,6 @@ void free_move_list(){
         free(l_person_moved[o]);
     }
     free(l_person_moved);
-
 }
 
 void free_prop_list(){
@@ -1068,5 +1108,115 @@ void free_prop_list(){
         free(l_person_propagate[o]);
     }
     free(l_person_propagate);
-
 }
+
+void calculate_metrics()
+{
+    aux_healthy += p_healthy;
+    aux_infected += p_infected;
+    aux_recovered += p_recovered;
+    aux_death += p_death;
+    p_healthy = 0;
+    p_infected = 0;
+    p_recovered = 0;
+    p_death = 0;
+
+    mean_death = aux_death / POPULATION_SIZE;
+    mean_infected = aux_infected / POPULATION_SIZE;
+    mean_recovered = aux_recovered / POPULATION_SIZE;
+    mean_healthy = aux_healthy / POPULATION_SIZE;
+    mean_RO = 0.0; // TODO
+}
+
+void save_metrics(int world_rank, int iteration)
+{
+    calculate_metrics();
+    char str[10000];
+    char str_aux[1000];
+    snprintf(str_aux, sizeof(str), "RANK : %d | ITERACCION: %d ", world_rank, iteration);
+    strcat(str, str_aux);
+    snprintf(str_aux, sizeof(str_aux), "Nº sanas: %f | Nº contagiadas : %f | Nº recuperadas : %f | Nº fallecidas: %f| R0: %f \n", mean_healthy, mean_infected, mean_recovered, mean_death, mean_RO);
+    strcat(str, str_aux);
+    strcat(str, "\n");
+    if (num_bach == 3)
+    {
+        printf("[METRICAS]: Rank %d {METRICS}\n", world_rank);
+        strcpy(l_metrics, str);
+    }
+}
+
+void print_metrics()
+{
+    printf(">Imprimiendo metrics...\n");
+    arch_metrics = fopen("COVID.metricas", "w");
+    if (arch_metrics == NULL)
+    {
+        printf("El fichero arch_metrics no se ha podido abrir para escritura.\n");
+    }
+
+    fprintf(arch_metrics, l_metrics_aux);
+
+    if (fclose(arch_metrics) != 0)
+    {
+        printf("No se ha podido cerrar el arch_metrics.\n");
+    }
+}
+
+void save_positions(int world_rank, int iteration)
+{
+    char str[100000];
+    char str_aux[10000];
+    snprintf(str_aux, sizeof(str), "RANK : %d | ITERACCION: %d | {INFECTED - ", world_rank, iteration);
+    strcat(str, str_aux);
+    for (i = 0; i < id_contI; i++) // INFECTED
+    {
+        if (l_person_infected[i].id != -1)
+        {
+            snprintf(str_aux, sizeof(str_aux), "| %d[%d,%d]", l_person_infected[i].id_global, l_person_infected[i].coord.x, l_person_infected[i].coord.y);
+            strcat(str, str_aux);
+        }
+    }
+    strcat(str, "} {NOT-INFECTED - ");
+    for (i = 0; i < id_contNotI; i++) // NOT-INFECTED
+    {
+        if (l_person_notinfected[i].id != -1)
+        {
+            snprintf(str_aux, sizeof(str_aux), "| %d[%d,%d]", l_person_notinfected[i].id_global, l_person_notinfected[i].coord.x, l_person_notinfected[i].coord.y);
+            strcat(str, str_aux);
+        }
+    }
+    strcat(str, "} {VACCINED - ");
+    //printf("Print 2 %s\n",str);
+    for (i = 0; i < id_contVaccined; i++) // VACCINED
+    {
+        if (l_vaccined[i].id != -1)
+        {
+            snprintf(str_aux, sizeof(str_aux), "| %d[%d,%d]", l_vaccined[i].id_global, l_vaccined[i].coord.x, l_vaccined[i].coord.y);
+            strcat(str, str_aux);
+        }
+    }
+    strcat(str, "}\n");
+    //printf(">>>PRINT %s\n",str); (BATCH/ITER)-1
+    if (num_bach == 3)
+    {
+        printf("[METRICAS]: Rank %d {POSITIONS}\n", world_rank);
+        strcpy(l_positions, str);
+    }
+}
+
+void print_positions()
+{
+    printf(">Imprimiendo positions...\n");
+    arch_positions = fopen("COVID.positions", "w");
+    if (arch_positions == NULL)
+    {
+        printf("El fichero arch_positions no se ha podido abrir para escritura.\n");
+    }
+    fprintf(arch_positions, l_positions_aux);
+    if (fclose(arch_positions) != 0)
+    {
+        printf("No se ha podido cerrar el arch_positions.\n");
+    }
+}
+
+

@@ -9,7 +9,7 @@
 #define MAX_RECOVERY 10
 #define MAX_INFECTION 0.3 //0.6
 #define MAX_DEATH 200
-#define POPULATION_SIZE 60
+#define POPULATION_SIZE 20
 #define BATCH 2
 #define CUADRICULA 5
 #define ITER 10
@@ -104,9 +104,16 @@ void init_gsl(int seed);
 void init_person_parameters(person_t *persona, int state, int id_local);
 void init_prop_list(int size_x, int size_y);
 void init_move_list(int size_x, int size_y);
-
+char *init_list_archives(int size);
 
 void propagate_arrived();
 float calculate_prob_death(int edad);
+
+void print_positions();
+void save_positions(int world_rank, int iteration);
+void print_metrics();
+void save_metrics(int world_rank, int iteration);
+void calculate_metrics();
+char *init_list_archives(int size);
 
 #endif // DEFINITIONS_H
