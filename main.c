@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
             {
                 if (vaccines_left > 0)
                 {
-                    if(l_person_notinfected[i].id != i) printf("El id y la posicion en la que se encuentra en la lista no es la misma\n");
+                    if(l_person_notinfected[i].id != i) //printf("El id y la posicion en la que se encuentra en la lista no es la misma\n");
                     is_vaccined = vacunate(&l_person_notinfected[i]);
                     if (is_vaccined == 0) // NOT-VACCINED
                     {
@@ -750,15 +750,21 @@ void change_state(person_t *person) // 1(INFECCIOSO) and 2(NO-INFECCIOSO) States
     {
         if (person->recovery == 0) // INMUNIZADO
         {
-            printf("La persona con id-global %d ha cambiado de estado\n",person->id_global);
-            l_person_infected[person->id].id = -1;
+            int pId = person->id;
+            person_t *person_ptr, person_aux;
+            // printf("[PROPAGATE]: Lista antes de ID_global %d --> %d\n", person->id_global,l_person_infected[person->id].id);
+            //person->id = -1;
+            // printf("[PROPAGATE]: Lista despues de ID_global %d --> %d\n", person->id_global, l_person_infected[pId].id);
+            //memcpy(person_ptr, person, sizeof(person_t));
+            //person_ptr = person;
             person->state = 3;
             person->incubation_period = random_number(3, 5);
             person->recovery = random_number(3, 5);
             person->id = id_contVaccined;
-            memcpy(&l_vaccined[id_contVaccined],person,sizeof(person_t));
             world[person->coord.x][person->coord.y].l = VACCINED;
             world[person->coord.x][person->coord.y].id = id_contVaccined;
+            memcpy(&l_vaccined[id_contVaccined],person,sizeof(person_t));
+            person->id = -1;
             id_contVaccined++;
         }
         else // PROPAGA
@@ -777,12 +783,12 @@ int vacunate(person_t *person)
     if (person->age >= group_to_vaccine * 10)
     {
         printf("[VACUNAR]: %d\n", person->id_global);
-        l_person_notinfected[person->id].id = -1;
         person->state = 4;
         person->id = id_contVaccined;
-        memcpy(&l_vaccined[id_contVaccined],person,sizeof(person_t));
         world[person->coord.x][person->coord.y].l = VACCINED;
         world[person->coord.x][person->coord.y].id = id_contVaccined;
+        memcpy(&l_vaccined[id_contVaccined],person,sizeof(person_t));
+        person->id = -1;
         id_contVaccined++;
         return 1;
     }
@@ -1172,7 +1178,7 @@ void save_positions(int world_rank, int iteration)
     {
         if (l_person_infected[i].id != -1)
         {
-            snprintf(str_aux, sizeof(str_aux), "| %d[%d,%d]", l_person_infected[i].id_global, l_person_infected[i].coord.x, l_person_infected[i].coord.y);
+            snprintf(str_aux, sizeof(str_aux), "| %d[%d,%d]",l_person_infected[i].id_global, l_person_infected[i].coord.x, l_person_infected[i].coord.y);
             strcat(str, str_aux);
         }
     }
