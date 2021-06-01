@@ -89,9 +89,13 @@ int search_node(int world_rank, int x, int y);
 
 void free_move_list();
 void free_prop_list();
+void free_person_move();
+void free_index_list();
+void free_person_return();
+
 void move_arrived();
 
-void send_visitors(int flag);
+void send_visitors(int flag,int flag_return);
 void Psend(int to_node, int flag);
 void recive(int flag);
 
@@ -105,6 +109,7 @@ void init_person_parameters(person_t *persona, int state, int id_local);
 void init_prop_list(int size_x, int size_y);
 void init_move_list(int size_x, int size_y);
 char *init_list_archives(int size);
+void init_person_move_list(int size_x,int size_y);
 
 void propagate_arrived();
 float calculate_prob_death(int edad);
@@ -115,5 +120,13 @@ void print_metrics();
 void save_metrics(int world_rank, int iteration);
 void calculate_metrics();
 char *init_list_archives(int size);
+
+void Psend_return(int to_node);
+void recive_return();
+
+void init_index_list(int size_x,int size_y);
+void init_person_return(int size_x,int size_y);
+
+void move_returned();
 
 #endif // DEFINITIONS_H
