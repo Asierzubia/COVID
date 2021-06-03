@@ -81,6 +81,8 @@ void change_state(person_t *person);
 void realocate_lists();
 coord_t calculate_coord(int x, int y);
 void print_lists(int world_rank);
+void propagate(person_t *person);
+void change_infection_prob(person_t *person);
 
 void move_person(person_t *person, int world_rank);
 void move(person_t *person, coord_t *coord);
@@ -128,5 +130,6 @@ void init_index_list(int size_x,int size_y);
 void init_person_return(int size_x,int size_y);
 
 void move_returned();
+void kill(int id, char *list);
 
 #endif // DEFINITIONS_H
