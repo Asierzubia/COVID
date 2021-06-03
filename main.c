@@ -706,13 +706,15 @@ void recive(int flag)
     }
     else
     {
-        MPI_Recv(&cont_propagate_visitor, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        if (cont_propagate_visitor > 0)
+        int cont_p_visitor;
+        MPI_Recv(&cont_p_visitor, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        if (cont_p_visitor > 0)
         {
-            MPI_Recv(&l_person_propagate_recive[cont_propagate_recive], cont_propagate_visitor, coord_type, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&l_person_propagate_recive[cont_propagate_recive], cont_p_visitor, coord_type, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             //printf("LO HA RECIVIDO DEL PROCESADOR COORD----> %d\n",status_coor.MPI_SOURCE);
-            cont_propagate_recive = cont_propagate_recive + cont_propagate_visitor;
+            cont_propagate_recive = cont_propagate_recive + cont_p_visitor;
         }
+        printf("[RECIVE]: {PROPAGATE} P%d Cont : %d Cont Visitor: %d\n", world_rank, cont_propagate_recive, cont_p_visitor);
     }
 }
 
@@ -1105,6 +1107,7 @@ void propagate(person_t *person)
                 coord_t coord = calculate_coord(x, y);
                 memcpy(&l_person_propagate[to_node][l_cont_node_propagate[to_node]], &coord, sizeof(coord_t));
                 l_cont_node_propagate[to_node] = l_cont_node_propagate[to_node] + 1;
+                cont_propagate_visitor++;
             }
         }
     }
