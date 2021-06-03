@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
         }
         move_arrived();
 
-        propagate_arrived();
+        //propagate_arrived();
 
         send_visitors(0, 1);
         if (world_rank == 0)
@@ -669,10 +669,10 @@ void Psend(int to_node, int flag)
     else
     {
         //printf("Contador enviado COORD-> %d\n",l_cont_node_move[to_node]);
-        MPI_Send(&cont_propagate_visitor, 1, MPI_INT, to_node, 0, MPI_COMM_WORLD);
-        if (cont_propagate_visitor > 0)
+        MPI_Send(&l_cont_node_propagate[to_node], 1, MPI_INT, to_node, 0, MPI_COMM_WORLD);
+        if (l_cont_node_propagate[to_node] > 0)
         {
-            MPI_Send(l_person_propagate, cont_propagate_visitor, coord_type, to_node, 0, MPI_COMM_WORLD);
+            MPI_Send(l_person_propagate[to_node], l_cont_node_propagate[to_node], coord_type, to_node, 0, MPI_COMM_WORLD);
         }
     }
 }
@@ -1106,8 +1106,7 @@ void propagate(person_t *person)
                 printf("[PROPAGATE]: P%d Iter: %d | {VISITANTE->%d} ID_Global : %d | ID_Local : %d | Pos : [%d,%d] \n", world_rank, cont_iter, to_node, person->id_global, person->id, x + directions[n][0], y + directions[n][1]);
                 coord_t coord = calculate_coord(x, y);
                 memcpy(&l_person_propagate[to_node][l_cont_node_propagate[to_node]], &coord, sizeof(coord_t));
-                l_cont_node_propagate[to_node] = l_cont_node_propagate[to_node] + 1;
-                cont_propagate_visitor++;
+                l_cont_node_propagate[to_node] ++;
             }
         }
     }
