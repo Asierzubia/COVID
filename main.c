@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
         }
         move_arrived();
 
-        //propagate_arrived();
+        propagate_arrived();
 
         send_visitors(0, 1);
         if (world_rank == 0)
@@ -363,46 +363,44 @@ void move_returned()
 }
 void propagate_arrived()
 {
-    printf("[ARRIVED]: {PROPAGATE} P%d Cont : %d \n", world_rank, cont_propagate_recive);
+    printf("[ARRIVED]: P%d Iter : %d | Cont : %d \n", world_rank, cont_iter, cont_propagate_recive);
     for (i = 0; i < cont_propagate_recive; i++)
     {
-        if (world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].x].id != -1)
-        { //Hay alguien, por lo que la infecto
-            if (world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].x].l == NOT_INFECTED)
-            { //Solo lo recorro si esta en no infectados
-                int id = world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].x].id;
-                printf("[ARRIVED]: {PROPAGATE} P%d | Coord : [%d,%d] \n", world_rank, l_person_propagate_recive[i].x, l_person_propagate_recive[i].y);
-                //if (l_person_notinfected[id].prob_infection > MAX_INFECTION) // Se infecta
-                // {
-                //     int prob_aux = 1000 * calculate_prob_death(l_person_notinfected[id].age);
-                //     if (random_number(0, MAX_DEATH) <= prob_aux) // MUERE
-                //     {
-                //         printf(">>>>>%d HA MUERTO!\n", l_person_notinfected[id].id_global);
-                //         l_person_notinfected[id].state = 5;
-                //         world[l_person_notinfected[id].coord.x][l_person_notinfected[id].coord.y].id = -1;
-                //         cont_death++;
-                //     }
-                //     else
-                //     {
-                //         printf(">>>>>%d SE HA INFECTADO!\n", l_person_notinfected[id].id_global);
-                //         if (random_number(0, 1) == 0) // INFECCIOSO
-                //         {
-                //             l_person_notinfected[id].state = 2;
-                //         }
-                //         else
-                //         {
-                //             l_person_notinfected[id].state = 1;
-                //         }
-                //         l_person_notinfected[id].id = id_contI;
-                //         memcpy(&l_person_infected[id_contI],&l_person_notinfected[id],sizeof(person_t));
-                //         world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].y].l = INFECTED;
-                //         world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].y].id = id_contI;
-                //         l_person_notinfected[id].id = -1;
-                //         id_contI++;
-                //     }
-                // }
+        printf("[ARRIVED]: P%d Iter : %d | Origen : P%d | {MIRAR} Pos : [%d,%d] \n", world_rank, cont_iter, i, l_person_propagate_recive[i].x, l_person_propagate_recive[i].y);
+        if (world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].y].id != -1 && world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].y].l == NOT_INFECTED)
+        {
+            int id = world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].y].id;
+            printf("[ARRIVED]: P%d Iter : %d | Origen : P%d | {PROPAGATE} Pos : [%d,%d] \n", world_rank, cont_iter, i, l_person_propagate_recive[i].x, l_person_propagate_recive[i].y);
+            change_infection_prob(&l_person_notinfected[id]);
+            if (l_person_notinfected[id].prob_infection > MAX_INFECTION) // Se infecta
+            {
+                l_person_notinfected[id].id = -1;
+                int prob_aux = 1000 * calculate_prob_death(l_person_notinfected[id].age);
+                if (random_number(0, MAX_DEATH) <= prob_aux) // MUERE
+                {
+                    printf("[ARRIVED]: P%d Iter : %d | Origen : P%d | {MUERTE -> %d} Pos : [%d,%d] \n", world_rank, cont_iter, i, l_person_notinfected[id].id_global, l_person_propagate_recive[i].x, l_person_propagate_recive[i].y);
+                    l_person_notinfected[id].state = 5;
+                    world[l_person_notinfected[id].coord.x][l_person_notinfected[id].coord.y].id = -1;
+                    cont_death++;
+                }
+                else
+                {
+                    printf("[ARRIVED]: P%d Iter : %d | Origen : P%d | {INFECTADO -> %d} Pos : [%d,%d] \n", world_rank, cont_iter, i, l_person_notinfected[id].id_global, l_person_propagate_recive[i].x, l_person_propagate_recive[i].y);
+                    if (random_number(0, 1) == 0) // INFECCIOSO
+                    {
+                        l_person_notinfected[id].state = 2;
+                    }
+                    else
+                    {
+                        l_person_notinfected[id].state = 1;
+                    }
+                    l_person_notinfected[id].id = id_contI;
+                    memcpy(&l_person_infected[id_contI], &l_person_notinfected[id], sizeof(person_t));
+                    world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].y].l = INFECTED;
+                    world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].y].id = id_contI;
+                    id_contI++;
+                }
             }
-            //Lo pongo en la posicion correspondiente del world el valor de INFECTED
         }
     }
 }
@@ -714,7 +712,7 @@ void recive(int flag)
             //printf("LO HA RECIVIDO DEL PROCESADOR COORD----> %d\n",status_coor.MPI_SOURCE);
             cont_propagate_recive = cont_propagate_recive + cont_p_visitor;
         }
-        printf("[RECIVE]: {PROPAGATE} P%d Cont : %d Cont Visitor: %d\n", world_rank, cont_propagate_recive, cont_p_visitor);
+        //printf("[RECIVE]: {PROPAGATE} P%d Cont : %d Cont Visitor: %d\n", world_rank, cont_propagate_recive, cont_p_visitor);
     }
 }
 
@@ -1062,24 +1060,23 @@ void propagate(person_t *person)
             if (index.id != -1 && index.l == NOT_INFECTED) // Persona no infectada y asignada
             {
                 // Se guarda la persona y se calculan los datos
-                printf("[PROPAGATE]: {INDEX} P%d ID_Local : %d | Pos [%d,%d] \n", world_rank, index.id, x + directions[n][0], y + directions[n][1]);
+                printf("[PROPAGATE]: {INDEX} P%d Iter : %d | ID_Global : %d | Mirar ID_Local : %d | Mirar Pos [%d,%d] \n", world_rank, cont_iter, person->id_global, index.id, x + directions[n][0], y + directions[n][1]);
                 memcpy(&person_aux, &l_person_notinfected[index.id], sizeof(person_t));
                 change_infection_prob(&person_aux);
-
                 if (person_aux.prob_infection > MAX_INFECTION) // SE INFECTA
                 {
                     l_person_notinfected[index.id].id = -1;
                     prob_aux = 1000 * calculate_prob_death(person_aux.age);
-
                     if (random_number(0, MAX_DEATH) <= prob_aux) // MUERE
                     {
-                        printf("[PROPAGATE]: P%d Iter : %d | {MUERTE} ID_Global : %d | ID_Local : %d | Pos : [%d,%d] \n", world_rank, cont_iter, person->id_global, person->id, x + directions[n][0], y + directions[n][1]);
+                        printf("[PROPAGATE]: P%d Iter : %d | {MUERTE -> %d} | Atacado por --> ID_Global : %d | ID_Local : %d | Pos : [%d,%d] \n", world_rank, cont_iter, l_person_notinfected[index.id].id_global, person->id_global, person->id, x + directions[n][0], y + directions[n][1]);
                         person_aux.state = 5;
                         world[x + directions[n][0]][y + directions[n][1]].id = -1;
+                        cont_death++;
                     }
                     else
                     {
-                        printf("[PROPAGATE]: P%d Iter : %d | {INFECTADO} ID_Global : %d | ID_Local : %d | Pos : [%d,%d] | ID_contI : %d \n", world_rank, cont_iter, person->id_global, person->id, x + directions[n][0], y + directions[n][1], id_contI);
+                        printf("[PROPAGATE]: P%d Iter : %d | {INFECTADO -> %d} | Infectado por --> ID_Global : %d | ID_Local : %d | Pos : [%d,%d] | ID_contI : %d \n", world_rank, cont_iter, l_person_notinfected[index.id].id_global, person->id_global, person->id, x + directions[n][0], y + directions[n][1], id_contI);
                         if (random_number(0, 1) == 0) // INFECCIOSO
                         {
                             person_aux.state = 2;
@@ -1104,9 +1101,9 @@ void propagate(person_t *person)
             if (to_node != -1)
             {
                 printf("[PROPAGATE]: P%d Iter: %d | {VISITANTE->%d} ID_Global : %d | ID_Local : %d | Pos : [%d,%d] \n", world_rank, cont_iter, to_node, person->id_global, person->id, x + directions[n][0], y + directions[n][1]);
-                coord_t coord = calculate_coord(x, y);
+                coord_t coord = calculate_coord(x + directions[n][0], y + directions[n][1]);
                 memcpy(&l_person_propagate[to_node][l_cont_node_propagate[to_node]], &coord, sizeof(coord_t));
-                l_cont_node_propagate[to_node] ++;
+                l_cont_node_propagate[to_node]++;
             }
         }
     }
