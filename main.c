@@ -364,6 +364,7 @@ void move_returned()
 void propagate_arrived()
 {
     printf("[ARRIVED]: P%d Iter : %d | Cont : %d \n", world_rank, cont_iter, cont_propagate_recive);
+    int i;
     for (i = 0; i < cont_propagate_recive; i++)
     {
         printf("[ARRIVED]: P%d Iter : %d | Origen : P%d | {MIRAR} Pos : [%d,%d] \n", world_rank, cont_iter, i, l_person_propagate_recive[i].x, l_person_propagate_recive[i].y);
