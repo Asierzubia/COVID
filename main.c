@@ -332,6 +332,7 @@ void move_returned()
 {
     //printf("[RETURNED]: %d moviendo returned\n",world_rank);
     int index;
+    int i;
     for (i = 0; i < world_size; i++)
     {
         for (j = 0; j < l_cont_person_return[i]; j++)
@@ -408,6 +409,7 @@ void propagate_arrived()
 
 float calculate_prob_death(int edad)
 {
+    int i;
     for (i = 0; i < 9; i++)
     {
         if (edad >= 10 * i && edad < 10 * i + 10)
@@ -721,6 +723,7 @@ void move_arrived()
 {
 
     int l;
+    int i;
     for (i = 0; i < world_size; i++)
     {
         for (l = 0; l < l_cont_persona_mover[i]; l++)
@@ -1159,13 +1162,13 @@ person_t *init_lists(int pop)
 
 void init_world(int size_x, int size_y)
 {
+    int i;
     world = malloc(size_x * sizeof(index_t *));
     if (world == NULL)
     {
         fprintf(stderr, "Memory Allocation Failed\n");
         exit(EXIT_FAILURE);
     }
-    int i;
     for (i = 0; i < size_x; i++)
     {
         world[i] = malloc(size_y * sizeof(index_t));
@@ -1269,7 +1272,7 @@ void print_world(int worldRank)
 
 void realocate_lists()
 {
-
+    int i;
     int last_value = id_contI;
     for (i = 0; i < id_contI; i++)
     { // INFECTED
@@ -1454,14 +1457,13 @@ void create_data_type_person_move(coord_t *coordenadas, person_t *persona)
 
 void init_index_list(int size_x, int size_y)
 {
-
+    int i;
     index_return_person = malloc(size_x * sizeof(int *));
     if (index_return_person == NULL)
     {
         fprintf(stderr, "Memory Allocation Failed\n");
         exit(EXIT_FAILURE);
     }
-    int i;
     for (i = 0; i < size_x; i++)
     {
         index_return_person[i] = malloc(size_y * sizeof(int));
@@ -1531,11 +1533,10 @@ void init_prop_list(int size_x, int size_y)
 
 void free_move_list()
 {
-
-    int o;
-    for (o = 0; o < world_size; o++)
+    int i;
+    for (i = 0; i < world_size; i++)
     {
-        free(l_person_moved[o]);
+        free(l_person_moved[i]);
     }
     free(l_person_moved);
 }
@@ -1543,10 +1544,10 @@ void free_move_list()
 void free_prop_list()
 {
 
-    int o;
-    for (o = 0; o < world_size; o++)
+    int i;
+    for (i = 0; i < world_size; i++)
     {
-        free(l_person_propagate[o]);
+        free(l_person_propagate[i]);
     }
     free(l_person_propagate);
 }
@@ -1609,6 +1610,7 @@ void save_positions(int world_rank, int iteration)
     char str_aux[10000];
     snprintf(str_aux, sizeof(str), "P%d | ITERACCION: %d | {INFECTED - ", world_rank, iteration);
     strcat(str, str_aux);
+    int i;
     for (i = 0; i < id_contI; i++) // INFECTED
     {
         if (l_person_infected[i].id != -1)
@@ -1670,9 +1672,9 @@ void free_person_move()
     }
     free(lista_de_persona_mover);
 }
+
 void free_index_list()
 {
-
     int o;
     for (o = 0; o < world_size; o++)
     {
@@ -1680,9 +1682,9 @@ void free_index_list()
     }
     free(index_return_person);
 }
+
 void free_person_return()
 {
-
     int o;
     for (o = 0; o < world_size; o++)
     {
