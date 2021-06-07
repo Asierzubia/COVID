@@ -374,18 +374,17 @@ void propagate_arrived()
             change_infection_prob(&l_person_notinfected[id]);
             if (l_person_notinfected[id].prob_infection > MAX_INFECTION) // Se infecta
             {
-                l_person_notinfected[id].id = -1;
                 int prob_aux = 1000 * calculate_prob_death(l_person_notinfected[id].age);
                 if (random_number(0, MAX_DEATH) <= prob_aux) // MUERE
                 {
-                    printf("[ARRIVED]: P%d Iter : %d | Origen : P%d | {MUERTE -> %d} Pos : [%d,%d] \n", world_rank, cont_iter, i, l_person_notinfected[id].id_global, l_person_propagate_recive[i].x, l_person_propagate_recive[i].y);
+                    printf("[ARRIVED]: P%d Iter : %d | Origen : P%d | {MUERTE->%d} Pos : [%d,%d] \n", world_rank, cont_iter, i, l_person_notinfected[id].id_global, l_person_propagate_recive[i].x, l_person_propagate_recive[i].y);
                     l_person_notinfected[id].state = 5;
                     world[l_person_notinfected[id].coord.x][l_person_notinfected[id].coord.y].id = -1;
                     cont_death++;
                 }
                 else
                 {
-                    printf("[ARRIVED]: P%d Iter : %d | Origen : P%d | {INFECTADO -> %d} Pos : [%d,%d] \n", world_rank, cont_iter, i, l_person_notinfected[id].id_global, l_person_propagate_recive[i].x, l_person_propagate_recive[i].y);
+                    printf("[ARRIVED]: P%d Iter : %d | Origen : P%d | {INFECTADO->%d} Pos : [%d,%d] \n", world_rank, cont_iter, i, l_person_notinfected[id].id_global, l_person_propagate_recive[i].x, l_person_propagate_recive[i].y);
                     if (random_number(0, 1) == 0) // INFECCIOSO
                     {
                         l_person_notinfected[id].state = 2;
@@ -400,6 +399,7 @@ void propagate_arrived()
                     world[l_person_propagate_recive[i].x][l_person_propagate_recive[i].y].id = id_contI;
                     id_contI++;
                 }
+                l_person_notinfected[id].id = -1;
             }
         }
     }
@@ -990,7 +990,7 @@ void move_person(person_t *person, int world_rank)
                 coord = calculate_coord(x, y);
                 if (to_node < world_size && to_node >= 0)
                 {
-                    printf("[MOVE]: P%d Iter : %d | {VISITANTE->%d} | ID : %d | ID_Global : %d | Actual : [%d,%d] | Nueva [%d,%d] | Speed [%d,%d] | State : %d\n",
+                    printf("[MOVE]: P%d Iter : %d | {VISITANTE->P%d} | ID : %d | ID_Global : %d | Actual : [%d,%d] | Nueva [%d,%d] | Speed [%d,%d] | State : %d\n",
                            world_rank, cont_iter, to_node, person->id, person->id_global, person->coord.x, person->coord.y, x, y, person->speed[0], person->speed[1], person->state);
                     //printf("Person ID -> %d\n",person->id);
                     memcpy(&l_person_moved[to_node][l_cont_node_move[to_node]].person, person, sizeof(person_t));
@@ -1100,7 +1100,7 @@ void propagate(person_t *person)
             //printf("[PROPAGATE]: VISITANTE->%d \n", to_node);
             if (to_node != -1)
             {
-                printf("[PROPAGATE]: P%d Iter: %d | {VISITANTE->%d} ID_Global : %d | ID_Local : %d | Pos : [%d,%d] \n", world_rank, cont_iter, to_node, person->id_global, person->id, x + directions[n][0], y + directions[n][1]);
+                printf("[PROPAGATE]: P%d Iter: %d | {VISITANTE->P%d} ID_Global : %d | ID_Local : %d | Pos : [%d,%d] \n", world_rank, cont_iter, to_node, person->id_global, person->id, x + directions[n][0], y + directions[n][1]);
                 coord_t coord = calculate_coord(x + directions[n][0], y + directions[n][1]);
                 memcpy(&l_person_propagate[to_node][l_cont_node_propagate[to_node]], &coord, sizeof(coord_t));
                 l_cont_node_propagate[to_node]++;
