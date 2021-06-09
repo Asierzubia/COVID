@@ -24,11 +24,10 @@ gsl_rng *r;
 int world_size, world_rank;
 float l_death_prob[9] = {0.0, 0.002, 0.002, 0.002, 0.004, 0.013, 0.036, 0.08, 0.148};
 float age_mean, prob_infection, recovery_period, prob_direction, prob_speed;
-float mean_death, mean_infected, mean_recovered, mean_healthy, mean_RO;
 int identificador_global;
 int iter, posX, posY, i, j, k, position, seed, mu, alpha, beta;
 int num_persons_to_vaccine, group_to_vaccine, when_change_group, person_vaccinned, radius, vaccines_left;
-int id_contVaccined, idx_iter, cont_bach, id_contI, id_contNotI, cont_death, cont_move_visitor, cont_move_return, cont_propagate_visitor;
+int id_contVaccined, idx_iter, cont_bach, id_contI, id_contNotI, cont_death, cont_healthy, cont_infected, cont_recovered, cont_move_visitor, cont_move_return, cont_propagate_visitor;
 int bach, cont_bach, sanas, contagiadas, fallecidas, recuperadas, RO, num_bach;
 int p_death, p_infected, p_recovered, p_healthy, p_RO;
 int aux_death, aux_infected, aux_recovered, aux_healthy, aux_RO;
@@ -38,11 +37,15 @@ int quadrant_y;
 int contador, cont_propagate_recive;
 int cont_iter; // ELIMINAR
 
+float iter_healthy, iter_recovered, iter_infected,iter_death, iter_RO;
+
 int **index_return_person;
 int *cont_index_return;
-
+float *l_mean_healthy, *l_mean_infected, *l_mean_recovered, *l_mean_death, *l_mean_R0;
+float *recv_healthy, *recv_infected, *recv_recovered, *recv_death, *recv_R0;
 FILE *arch_metrics, *arch_positions;
-char *l_positions, *l_metrics, *l_positions_aux, *l_metrics_aux, *recv_positions, *recv_metrics;
+char *l_positions, *l_metrics, *l_positions_aux, *l_metrics_aux, *recv_positions;
+float **recv_metrics;
 
 MPI_Datatype coord_type;
 MPI_Datatype person_type;
@@ -105,6 +108,9 @@ int main(int argc, char *argv[])
         quadrant_y = SIZE_WORLD / (int)ceil(sqrt(world_size));
         population = round(POPULATION_SIZE / world_size);
         num_persons_to_vaccine = round(POPULATION_SIZE * PERCENT);
+        float *recv_healthy, *recv_infected, *recv_recovered, *recv_death, *recv_R0;
+        recv_positions = malloc(10000 * world_size * sizeof(char));
+        init_recv_metric_list();
     }
 
     MPI_Bcast(&population, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -127,10 +133,14 @@ int main(int argc, char *argv[])
     l_cont_node_propagate = malloc(world_size * sizeof(int));
     l_cont_persona_mover = malloc(world_size * sizeof(int));
     l_cont_person_return = malloc(world_size * sizeof(int));
-    l_metrics = init_list_archives(1024);
+    l_metrics = malloc(5 * sizeof(float));
     l_positions = init_list_archives(1024);
-    recv_positions = malloc(10000 * world_size * sizeof(char));
-    recv_metrics = malloc(10000 * world_size * sizeof(char));
+    l_mean_healthy = malloc(ITER * sizeof(float));
+    l_mean_infected = malloc(ITER * sizeof(float));
+    l_mean_recovered = malloc(ITER * sizeof(float));
+    l_mean_death = malloc(ITER * sizeof(float));
+    l_mean_R0 = malloc(ITER * sizeof(float));
+
     cont_index_return = malloc(world_size * sizeof(int));
 
     for (i = 0; i < world_size; i++)
@@ -291,8 +301,10 @@ int main(int argc, char *argv[])
         cont_iter++; // ELIMINAR
     }
 
+    // POSITIONS
     MPI_Gather(l_positions, 10000, MPI_CHAR, recv_positions, 10000, MPI_CHAR, 0, MPI_COMM_WORLD);
-    MPI_Gather(l_metrics, 10000, MPI_CHAR, recv_metrics, 10000, MPI_CHAR, 0, MPI_COMM_WORLD);
+    MPI_Gather(l_metrics, 5, MPI_FLOAT, recv_metrics[world_rank], 5, MPI_FLOAT, 0, MPI_COMM_WORLD);
+
     if (world_rank == 0)
     {
         if ((l_positions_aux = malloc(10000 * world_size * sizeof(char))) == NULL)
@@ -317,9 +329,12 @@ int main(int argc, char *argv[])
         print_positions();
     }
 
+
     free(l_person_infected);
     free(l_person_notinfected);
     free(l_vaccined);
+    free(l_metrics);
+    free_recv_metrics();
 
     printf("[MAIN]: P%d finaliza la simulacion\n", world_rank);
 
@@ -730,7 +745,7 @@ void move_arrived()
         {
             if (world[lista_de_persona_mover[i][l].coord.x][lista_de_persona_mover[i][l].coord.y].id == -1)
             { //Esta libre el sitio
-                printf("[ARRIVED]: {MOVER} P%d | ID_Global : %d | Pos : [%d,%d] \n", world_rank, lista_de_persona_mover[i][l].person.id_global, lista_de_persona_mover[i][l].coord.x, lista_de_persona_mover[i][l].coord.y);
+                printf("[ARRIVED]: P%d Iter : %d | {MOVER} ID_Global : %d | Pos : [%d,%d] \n", world_rank, cont_iter, lista_de_persona_mover[i][l].person.id_global, lista_de_persona_mover[i][l].coord.x, lista_de_persona_mover[i][l].coord.y);
                 //Lo meto en la lista correspondiente en base a si es infectado vacunado o no infectado
                 if (lista_de_persona_mover[i][l].person.state == 0)
                 { //No esta infectado
@@ -759,7 +774,7 @@ void move_arrived()
             }
             else
             {
-                printf("[ARRIVED]: {NO-MOVER} P%d | ID_Global : %d | Pos : [%d,%d] | ID_Local residente : %d \n", world_rank, lista_de_persona_mover[i][l].person.id_global, lista_de_persona_mover[i][l].coord.x, lista_de_persona_mover[i][l].coord.y, world[lista_de_persona_mover[i][l].coord.x][lista_de_persona_mover[i][l].coord.y].id);
+                printf("[ARRIVED]: P%d Iter : %d | {NO-MOVER} ID_Global : %d | Pos : [%d,%d] | ID_Local residente : %d \n", world_rank, cont_iter, lista_de_persona_mover[i][l].person.id_global, lista_de_persona_mover[i][l].coord.x, lista_de_persona_mover[i][l].coord.y, world[lista_de_persona_mover[i][l].coord.x][lista_de_persona_mover[i][l].coord.y].id);
             }
         }
     }
@@ -1066,7 +1081,8 @@ void propagate(person_t *person)
                 // Se guarda la persona y se calculan los datos
                 printf("[PROPAGATE]: {INDEX} P%d Iter : %d | ID_Global : %d | Mirar ID_Local : %d | Mirar Pos [%d,%d] \n", world_rank, cont_iter, person->id_global, index.id, x + directions[n][0], y + directions[n][1]);
                 memcpy(&person_aux, &l_person_notinfected[index.id], sizeof(person_t));
-                change_infection_prob(&person_aux);
+                person_aux.prob_infection = 0.9;
+                //change_infection_prob(&person_aux);
                 if (person_aux.prob_infection > MAX_INFECTION) // SE INFECTA
                 {
                     l_person_notinfected[index.id].id = -1;
@@ -1104,7 +1120,7 @@ void propagate(person_t *person)
             //printf("[PROPAGATE]: VISITANTE->%d \n", to_node);
             if (to_node != -1)
             {
-                printf("[PROPAGATE]: P%d Iter: %d | {VISITANTE->P%d} ID_Global : %d | ID_Local : %d | Pos : [%d,%d] \n", world_rank, cont_iter, to_node, person->id_global, person->id, x + directions[n][0], y + directions[n][1]);
+                printf("[PROPAGATE]: P%d Iter : %d | {VISITANTE->P%d} ID_Global : %d | ID_Local : %d | Pos : [%d,%d] \n", world_rank, cont_iter, to_node, person->id_global, person->id, x + directions[n][0], y + directions[n][1]);
                 coord_t coord = calculate_coord(x + directions[n][0], y + directions[n][1]);
                 memcpy(&l_person_propagate[to_node][l_cont_node_propagate[to_node]], &coord, sizeof(coord_t));
                 l_cont_node_propagate[to_node]++;
@@ -1337,6 +1353,31 @@ void realocate_lists()
     id_contVaccined = last_value;
 }
 
+void init_recv_metric_list()
+{
+
+    recv_metrics = malloc(world_size * sizeof(float));
+    if (recv_metrics == NULL)
+    {
+        fprintf(stderr, "Memory Allocation Failed\n");
+        exit(EXIT_FAILURE);
+    }
+    int l, n;
+    for (l = 0; l < world_size; l++)
+    {
+        recv_metrics[l] = malloc(5 * sizeof(float));
+        if (recv_metrics[l] == NULL)
+        {
+            fprintf(stderr, "Memory Allocation Failed\n");
+            exit(1);
+        }
+        for (n = 0; n < 5; n++)
+        {
+            recv_metrics[l][n] = -1;
+        }
+    }
+}
+
 void init_person_move_list(int size_x, int size_y)
 {
 
@@ -1531,6 +1572,16 @@ void init_prop_list(int size_x, int size_y)
     }
 }
 
+void free_recv_metrics()
+{
+    int i;
+    for (i = 0; i < world_size; i++)
+    {
+        free(recv_metrics[i]);
+    }
+    free(recv_metrics);
+}
+
 void free_move_list()
 {
     int i;
@@ -1554,20 +1605,17 @@ void free_prop_list()
 
 void calculate_metrics()
 {
-    aux_healthy += p_healthy;
-    aux_infected += p_infected;
-    aux_recovered += p_recovered;
-    aux_death += p_death;
-    p_healthy = 0;
-    p_infected = 0;
-    p_recovered = 0;
-    p_death = 0;
+    iter_healthy = cont_healthy / POPULATION_SIZE;
+    iter_recovered = cont_recovered / POPULATION_SIZE;
+    iter_infected = cont_infected / POPULATION_SIZE;
+    iter_death = cont_death / POPULATION_SIZE;
+    iter_RO = 0.0; // TODO
 
-    mean_death = aux_death / POPULATION_SIZE;
-    mean_infected = aux_infected / POPULATION_SIZE;
-    mean_recovered = aux_recovered / POPULATION_SIZE;
-    mean_healthy = aux_healthy / POPULATION_SIZE;
-    mean_RO = 0.0; // TODO
+    l_mean_healthy[cont_iter] = iter_healthy;
+    l_mean_recovered[cont_iter] = iter_recovered;
+    l_mean_infected[cont_iter] = iter_infected;
+    l_mean_death[cont_iter] = iter_death;
+    l_mean_R0[cont_iter] = iter_RO;
 }
 
 void save_metrics(int world_rank, int iteration)
@@ -1577,7 +1625,7 @@ void save_metrics(int world_rank, int iteration)
     char str_aux[1000];
     snprintf(str_aux, sizeof(str), "P%d | ITERACCION: %d ", world_rank, iteration);
     strcat(str, str_aux);
-    snprintf(str_aux, sizeof(str_aux), "Nº sanas: %f | Nº contagiadas : %f | Nº recuperadas : %f | Nº fallecidas: %f| R0: %f \n", mean_healthy, mean_infected, mean_recovered, mean_death, mean_RO);
+    snprintf(str_aux, sizeof(str_aux), "Nº sanas: %f | Nº contagiadas : %f | Nº recuperadas : %f | Nº fallecidas: %f| R0: %f \n", iter_healthy, iter_infected, iter_recovered, iter_death, iter_RO);
     strcat(str, str_aux);
     strcat(str, "\n");
     if (num_bach == 3)

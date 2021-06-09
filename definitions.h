@@ -7,9 +7,9 @@
 #define MAX_DIRECTION 7
 #define MAX_INCUBATION 5
 #define MAX_RECOVERY 10
-#define MAX_INFECTION 0.3 //0.6
+#define MAX_INFECTION 0.0 //0.6
 #define MAX_DEATH 200
-#define POPULATION_SIZE 20
+#define POPULATION_SIZE 40
 #define BATCH 2
 #define CUADRICULA 5
 #define ITER 10
@@ -94,6 +94,7 @@ void free_prop_list();
 void free_person_move();
 void free_index_list();
 void free_person_return();
+void free_recv_metrics();
 
 void move_arrived();
 
@@ -112,6 +113,7 @@ void init_prop_list(int size_x, int size_y);
 void init_move_list(int size_x, int size_y);
 char *init_list_archives(int size);
 void init_person_move_list(int size_x,int size_y);
+void init_recv_metric_list();
 
 void propagate_arrived();
 float calculate_prob_death(int edad);

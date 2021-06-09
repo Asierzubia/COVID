@@ -1,16 +1,16 @@
-OBJS	= ficheros/main.o
-SOURCE	= ficheros/main.c
-HEADER	= headers/population.h headers/environment.h headers/person.h headers/probability.h headers/vaccine.h
+OBJS	= main.o
+SOURCE	= main.c
+HEADER	= definitions.h
 OUT	= covid.out
 CC	 = gcc
 FLAGS	 = -g -c -Wall
-LFLAGS	 = -lm -lgsl
+LFLAGS	 = -lm -lgsl -lgslcblas
 
 all: $(OBJS)
 	$(CC) -g $(OBJS) -o $(OUT) $(LFLAGS)
 
-ficheros/main.o: ficheros/main.c
-	$(CC) $(FLAGS) ficheros/main.c 
+main.o: main.c
+	$(CC) $(FLAGS) main.c 
 
 
 clean:
