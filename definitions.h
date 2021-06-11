@@ -1,33 +1,29 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 
-#define MAX_ARGS 256
-#define MAX_FILE_LEN 4096
 #define SIZE_WORLD 8
 #define PERCENT 0.05
 #define MAX_SPEED 2
 #define MAX_DIRECTION 7
 #define MAX_INCUBATION 5
 #define MAX_RECOVERY 10
-#define MAX_INFECTION 0.3 //0.6
+#define MAX_INFECTION 0.0 //0.6
 #define MAX_DEATH 200
 #define POPULATION_SIZE 60
 #define BATCH 2
 #define CUADRICULA 5
 #define ITER 10000
 #define SEED 3
-#define AGEMEAN 28
 
 /*Estructuras*/
 
 typedef struct configuration_t {
     unsigned int world_size;
-    float percent_t;
+    unsigned int percent_t;
     unsigned int population_size;
     unsigned int batch;
     unsigned int iter_t;
     unsigned int seed;
-    unsigned int ageMean;
 } configuration_t;
 
 enum list
@@ -93,8 +89,12 @@ void move(person_t *person, coord_t *coord);
 int is_inside_world(int from, int direction, int to_node);
 int search_node(int world_rank, int x, int y);
 
-void free_all_lists();
-void init_all_lists();
+void free_move_list();
+void free_prop_list();
+void free_person_move();
+void free_index_list();
+void free_person_return();
+void free_recv_metrics();
 
 void move_arrived();
 
@@ -106,23 +106,14 @@ void create_data_type_coord(coord_t *coordenadas);
 void create_data_type_person(person_t *persona);
 void create_data_type_person_move(coord_t *coordenadas, person_t *persona);
 
-void free_prop_list();
-void free_person_move();
-void free_index_list();
-void free_person_return();
-void free_move_list();
-void free_world();
-
-
 void init_world(int size_x, int size_y);
 void init_gsl(int seed);
-void init_person_parameters(person_t *persona, int state, int id_local,int ageMean);
+void init_person_parameters(person_t *persona, int state, int id_local);
 void init_prop_list(int size_x, int size_y);
 void init_move_list(int size_x, int size_y);
 char *init_list_archives(int size);
 void init_person_move_list(int size_x,int size_y);
-void init_person_move_lists(person_move_t **list_person_move,int size_x,int size_y);
-void init_any_list(int size_x, int size_y,int **lista);
+void init_recv_metric_list();
 
 void propagate_arrived();
 float calculate_prob_death(int edad);
@@ -132,6 +123,7 @@ void save_positions(int world_rank, int iteration);
 void print_metrics();
 void save_metrics(int world_rank, int iteration);
 void calculate_metrics();
+void calculate_metric_mean();
 char *init_list_archives(int size);
 
 void Psend_return(int to_node);
@@ -141,8 +133,6 @@ void init_index_list(int size_x,int size_y);
 void init_person_return(int size_x,int size_y);
 
 void move_returned();
+void kill(int id, char *list);
 
-void getAlphaBeta(int ageMean);
-
-void set_configuration(int argc, char *argv[]);
 #endif // DEFINITIONS_H
