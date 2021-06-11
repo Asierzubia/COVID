@@ -9,10 +9,10 @@
 #define MAX_RECOVERY 10
 #define MAX_INFECTION 0.0 //0.6
 #define MAX_DEATH 200
-#define POPULATION_SIZE 40
+#define POPULATION_SIZE 60
 #define BATCH 2
 #define CUADRICULA 5
-#define ITER 10
+#define ITER 10000
 #define SEED 3
 
 /*Estructuras*/

@@ -164,18 +164,17 @@ int main(int argc, char *argv[])
         create_person(world_rank);
     }
 
+    init_move_list(world_size, quadrant_x * quadrant_y);
+    init_prop_list(world_size, quadrant_x * quadrant_y);
+    init_person_move_list(world_size, quadrant_x * quadrant_y);
+    init_index_list(world_size, quadrant_y * quadrant_x);
+    init_person_return(world_size, quadrant_x * quadrant_y);
+    l_person_propagate_recive = malloc(SIZE_WORLD * SIZE_WORLD * sizeof(coord_t));
     print_lists(world_rank);
     for (k = 0; k < ITER; k++) // ITERACCIONES
     {
-        init_move_list(world_size, quadrant_x * quadrant_y);
-        init_prop_list(world_size, quadrant_x * quadrant_y);
-        contador = 0;
         cont_propagate_recive = 0;
-        init_person_move_list(world_size, quadrant_x * quadrant_y);
-        init_index_list(world_size, quadrant_y * quadrant_x);
-        init_person_return(world_size, quadrant_x * quadrant_y);
-        l_person_propagate_recive = malloc(SIZE_WORLD * SIZE_WORLD * sizeof(coord_t));
-
+        
         if (cont_iterations >= when_change_group)
         {
             group_to_vaccine--;
@@ -234,48 +233,22 @@ int main(int argc, char *argv[])
 
         send_visitors(0, 0);
         send_visitors(1, 0);
-        //Tratar las listas de personas y coordenadas recividas
-        if (world_rank == 0)
-        {
-            int m, z;
-            for (m = 0; m < world_size; m++)
-            {
-                for (z = 0; z < l_cont_node_move[m]; z++)
-                {
-                    printf("Persona enviada a P%d | ID -> %d | Indice -> %d \n", m, l_person_moved[m][z].person.id, z);
-                }
-            }
-        }
         move_arrived();
-
         propagate_arrived();
-
         send_visitors(0, 1);
-        if (world_rank == 0)
-        {
-            int m, z;
-            for (m = 0; m < world_size; m++)
-            {
-                for (z = 0; z < l_cont_persona_mover[m]; z++)
-                {
-                    printf("Indice recivido de P%d | ID -> %d | Indice -> %d \n", m, lista_de_persona_mover[m][z].person.id, z);
-                }
-            }
-        }
         move_returned();
 
-        //MPI_Barrier(MPI_COMM_WORLD);
-        free(l_person_propagate_recive);
+        //free(l_person_propagate_recive);
 
         cont_move_visitor = 0;
         cont_move_return = 0;
         cont_propagate_visitor = 0;
 
-        free_move_list();
-        free_prop_list();
-        free_person_move();
-        free_index_list();
-        free_person_return();
+        // free_move_list();
+        // free_prop_list();
+        // free_person_move();
+        // free_index_list();
+        // free_person_return();
 
         for (i = 0; i < world_size; i++)
         {
@@ -289,8 +262,8 @@ int main(int argc, char *argv[])
         if (cont_bach == BATCH)
         {
             cont_bach = 1;
-            save_metrics(world_rank, k);
-            save_positions(world_rank, k);
+            //save_metrics(world_rank, k);
+            //save_positions(world_rank, k);
             realocate_lists();
             num_bach++;
         }
@@ -298,32 +271,32 @@ int main(int argc, char *argv[])
         {
             cont_bach++;
         }
-        cont_iter++; // ELIMINAR
+        cont_iter++; 
     }
 
-    // POSITIONS
-    MPI_Gather(l_positions, 10000, MPI_CHAR, recv_positions, 10000, MPI_CHAR, 0, MPI_COMM_WORLD);
+    //MPI_Gather(l_positions, 10000, MPI_CHAR, recv_positions, 10000, MPI_CHAR, 0, MPI_COMM_WORLD);
     //MPI_Gather(l_metrics, 5, MPI_FLOAT, recv_metrics[world_rank], 5, MPI_FLOAT, 0, MPI_COMM_WORLD);
 
-    if (world_rank == 0)
-    {
-        if ((l_positions_aux = malloc(10000 * world_size * sizeof(char))) == NULL)
-        {
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-        sprintf(l_positions_aux, "%s", recv_positions);
-        for (i = 1; i < world_size; i++)
-        {
-            strcat(l_positions_aux, &recv_positions[10000 * i]);
-        }
-        print_metrics();
-        print_positions();
-        //free_recv_metrics();
-    }
+    // if (world_rank == 0)
+    // {
+    //     if ((l_positions_aux = malloc(10000 * world_size * sizeof(char))) == NULL)
+    //     {
+    //         MPI_Abort(MPI_COMM_WORLD, 1);
+    //     }
+    //     sprintf(l_positions_aux, "%s", recv_positions);
+    //     for (i = 1; i < world_size; i++)
+    //     {
+    //         strcat(l_positions_aux, &recv_positions[10000 * i]);
+    //     }
+    //     print_metrics();
+    //     print_positions();
+    //     free(l_positions_aux);
+    //     //free_recv_metrics();
+    // }
 
-    free(l_person_infected);
-    free(l_person_notinfected);
-    free(l_vaccined);
+    // free(l_person_infected);
+    // free(l_person_notinfected);
+    // free(l_vaccined);
 
     printf("[MAIN]: P%d finaliza la simulacion\n", world_rank);
 
