@@ -123,6 +123,7 @@ void save_positions(int world_rank, int iteration);
 void print_metrics();
 void save_metrics(int world_rank, int iteration);
 void calculate_metrics();
+void calculate_metric_mean();
 char *init_list_archives(int size);
 
 void Psend_return(int to_node);

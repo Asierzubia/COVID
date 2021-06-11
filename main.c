@@ -37,15 +37,16 @@ int quadrant_y;
 int contador, cont_propagate_recive;
 int cont_iter; // ELIMINAR
 
-float iter_healthy, iter_recovered, iter_infected,iter_death, iter_RO;
+float iter_healthy, iter_recovered, iter_infected, iter_death, iter_RO;
 
 int **index_return_person;
 int *cont_index_return;
 float *l_mean_healthy, *l_mean_infected, *l_mean_recovered, *l_mean_death, *l_mean_R0;
 float *recv_healthy, *recv_infected, *recv_recovered, *recv_death, *recv_R0;
 FILE *arch_metrics, *arch_positions;
-char *l_positions, *l_metrics, *l_positions_aux, *l_metrics_aux, *recv_positions;
+char *l_positions, *l_positions_aux, *l_metrics_aux, *recv_positions;
 float **recv_metrics;
+float l_metrics[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
 
 MPI_Datatype coord_type;
 MPI_Datatype person_type;
@@ -133,7 +134,6 @@ int main(int argc, char *argv[])
     l_cont_node_propagate = malloc(world_size * sizeof(int));
     l_cont_persona_mover = malloc(world_size * sizeof(int));
     l_cont_person_return = malloc(world_size * sizeof(int));
-    l_metrics = malloc(5 * sizeof(float));
     l_positions = init_list_archives(1024);
     l_mean_healthy = malloc(ITER * sizeof(float));
     l_mean_infected = malloc(ITER * sizeof(float));
@@ -303,7 +303,7 @@ int main(int argc, char *argv[])
 
     // POSITIONS
     MPI_Gather(l_positions, 10000, MPI_CHAR, recv_positions, 10000, MPI_CHAR, 0, MPI_COMM_WORLD);
-    MPI_Gather(l_metrics, 5, MPI_FLOAT, recv_metrics[world_rank], 5, MPI_FLOAT, 0, MPI_COMM_WORLD);
+    //MPI_Gather(l_metrics, 5, MPI_FLOAT, recv_metrics[world_rank], 5, MPI_FLOAT, 0, MPI_COMM_WORLD);
 
     if (world_rank == 0)
     {
@@ -316,25 +316,14 @@ int main(int argc, char *argv[])
         {
             strcat(l_positions_aux, &recv_positions[10000 * i]);
         }
-        if ((l_metrics_aux = malloc(10000 * world_size * sizeof(char))) == NULL)
-        {
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-        sprintf(l_metrics_aux, "%s", recv_metrics);
-        for (i = 1; i < world_size; i++)
-        {
-            strcat(l_metrics_aux, &recv_metrics[10000 * i]);
-        }
         print_metrics();
         print_positions();
+        //free_recv_metrics();
     }
-
 
     free(l_person_infected);
     free(l_person_notinfected);
     free(l_vaccined);
-    free(l_metrics);
-    free_recv_metrics();
 
     printf("[MAIN]: P%d finaliza la simulacion\n", world_rank);
 
@@ -1605,50 +1594,83 @@ void free_prop_list()
 
 void calculate_metrics()
 {
-    iter_healthy = cont_healthy / POPULATION_SIZE;
-    iter_recovered = cont_recovered / POPULATION_SIZE;
-    iter_infected = cont_infected / POPULATION_SIZE;
-    iter_death = cont_death / POPULATION_SIZE;
-    iter_RO = 0.0; // TODO
+    l_metrics[0] = l_metrics[0] + cont_healthy;
+    l_metrics[1] = l_metrics[1] + cont_recovered;
+    l_metrics[2] = l_metrics[2] + cont_infected;
+    l_metrics[3] = l_metrics[3] + cont_death;
+    //l_metrics[4] = l_metrics[4] + cont_ ;
 
-    l_mean_healthy[cont_iter] = iter_healthy;
-    l_mean_recovered[cont_iter] = iter_recovered;
-    l_mean_infected[cont_iter] = iter_infected;
-    l_mean_death[cont_iter] = iter_death;
-    l_mean_R0[cont_iter] = iter_RO;
+    cont_healthy = 0;
+    cont_recovered = 0;
+    cont_infected = 0;
+    cont_death = 0;
+}
+
+void calculate_metric_mean()
+{
+    int num_batch = ITER / BATCH;
+    l_metrics[0] = l_metrics[0] / num_batch;
+    l_metrics[1] = l_metrics[1] / num_batch;
+    l_metrics[2] = l_metrics[2] / num_batch;
+    l_metrics[3] = l_metrics[3] / num_batch;
 }
 
 void save_metrics(int world_rank, int iteration)
 {
-    calculate_metrics();
-    char str[10000];
-    char str_aux[1000];
-    snprintf(str_aux, sizeof(str), "P%d | ITERACCION: %d ", world_rank, iteration);
-    strcat(str, str_aux);
-    snprintf(str_aux, sizeof(str_aux), "Nº sanas: %f | Nº contagiadas : %f | Nº recuperadas : %f | Nº fallecidas: %f| R0: %f \n", iter_healthy, iter_infected, iter_recovered, iter_death, iter_RO);
-    strcat(str, str_aux);
-    strcat(str, "\n");
-    if (num_bach == 3)
-    {
-        printf("[METRICAS]: P%d {METRICS}\n", world_rank);
-        strcpy(l_metrics, str);
-    }
+    l_metrics[0] = l_metrics[0] + cont_healthy;
+    l_metrics[1] = l_metrics[1] + cont_recovered;
+    l_metrics[2] = l_metrics[2] + cont_infected;
+    l_metrics[3] = l_metrics[3] + cont_death;
+    //l_metrics[4] = l_metrics[4] + cont_ ;
+
+    cont_healthy = 0;
+    cont_recovered = 0;
+    cont_infected = 0;
+    cont_death = 0;
 }
 
 void print_metrics()
 {
-    printf(">Imprimiendo metrics...\n");
-    arch_metrics = fopen("COVID.metricas", "w");
+    printf("[METRICAS]: Imprimiendo metrics...\n");
+    arch_metrics = fopen("METRICAS.metricas", "w");
     if (arch_metrics == NULL)
     {
         printf("El fichero arch_metrics no se ha podido abrir para escritura.\n");
     }
 
-    fprintf(arch_metrics, l_metrics_aux);
+    float mean_values[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+    char str_m[100000];
+    char str_aux_m[10000];
+    int i, j;
+    for (i = 0; i < 5; i++)
+    {
+          for (j = 0; j < world_size; j++)
+        {
+            mean_values[i] = mean_values[i] + recv_metrics[j][i];
+        }
+    }
+    snprintf(str_aux_m, sizeof(str_aux_m), "%6.4lf - %6.4lf - %6.4lf - %6.4lf - %6.4lf ", mean_values[0], mean_values[1], mean_values[2], mean_values[3], mean_values[4]);
+    strcat(str_m, str_aux_m);
+    fprintf(arch_metrics, str_m);
 
     if (fclose(arch_metrics) != 0)
     {
         printf("No se ha podido cerrar el arch_metrics.\n");
+    }
+}
+
+void print_positions()
+{
+    printf("[METRICAS]: Imprimiendo positions\n");
+    arch_positions = fopen("POSITIONS.pos", "w");
+    if (arch_positions == NULL)
+    {
+        printf("El fichero arch_positions no se ha podido abrir para escritura.\n");
+    }
+    fprintf(arch_positions, l_positions_aux);
+    if (fclose(arch_positions) != 0)
+    {
+        printf("No se ha podido cerrar el arch_positions.\n");
     }
 }
 
@@ -1692,21 +1714,6 @@ void save_positions(int world_rank, int iteration)
     {
         printf("[METRICAS]: P%d {POSITIONS}\n", world_rank);
         strcpy(l_positions, str);
-    }
-}
-
-void print_positions()
-{
-    printf(">Imprimiendo positions...\n");
-    arch_positions = fopen("COVID.positions", "w");
-    if (arch_positions == NULL)
-    {
-        printf("El fichero arch_positions no se ha podido abrir para escritura.\n");
-    }
-    fprintf(arch_positions, l_positions_aux);
-    if (fclose(arch_positions) != 0)
-    {
-        printf("No se ha podido cerrar el arch_positions.\n");
     }
 }
 
