@@ -1,6 +1,8 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 
+#define MAX_ARGS 256
+#define MAX_FILE_LEN 4096
 #define SIZE_WORLD 8
 #define PERCENT 0.05
 #define MAX_SPEED 2
@@ -14,16 +16,17 @@
 #define CUADRICULA 5
 #define ITER 10000
 #define SEED 3
-
+#define AGEMEAN 28
 /*Estructuras*/
 
 typedef struct configuration_t {
-    unsigned int world_size;
-    unsigned int percent_t;
-    unsigned int population_size;
-    unsigned int batch;
-    unsigned int iter_t;
-    unsigned int seed;
+    int world_size;
+    float percent;
+    int population_size;
+    int batch;
+    int iter;
+    int seed;
+    int ageMean;
 } configuration_t;
 
 enum list
@@ -95,6 +98,8 @@ void free_person_move();
 void free_index_list();
 void free_person_return();
 void free_recv_metrics();
+void free_all_lists();
+void free_world();
 
 void move_arrived();
 
@@ -114,6 +119,7 @@ void init_move_list(int size_x, int size_y);
 char *init_list_archives(int size);
 void init_person_move_list(int size_x,int size_y);
 void init_recv_metric_list();
+void init_all_lists();
 
 void propagate_arrived();
 float calculate_prob_death(int edad);
@@ -135,4 +141,6 @@ void init_person_return(int size_x,int size_y);
 void move_returned();
 void kill(int id, char *list);
 
+void getAlphaBeta(int ageMean);
+void set_configuration(int argc, char *argv[]);
 #endif // DEFINITIONS_H
