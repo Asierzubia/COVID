@@ -115,9 +115,13 @@ int main(int argc, char *argv[])
         population = round(POPULATION_SIZE / world_size);
         num_persons_to_vaccine = round(POPULATION_SIZE * PERCENT);
         float *recv_healthy, *recv_infected, *recv_recovered, *recv_death, *recv_R0;
-        recv_positions = malloc(10000000 * world_size * sizeof(char));
     }
-    
+    if ((l_positions_aux = malloc(1000000 * world_size * sizeof(char))) == NULL)
+        {
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+            recv_positions = malloc(1000000 * world_size * sizeof(char));
+
     //init_recv_metric_list();
 
     recv_metrics = malloc((5*world_size) * sizeof(float));
@@ -141,7 +145,7 @@ int main(int argc, char *argv[])
     l_cont_node_propagate = malloc(world_size * sizeof(int));
     l_cont_persona_mover = malloc(world_size * sizeof(int));
     l_cont_person_return = malloc(world_size * sizeof(int));
-    l_positions = malloc(10000000 * sizeof(char)); //init_list_archives(1024);
+    l_positions = malloc(1000000 * sizeof(char)); //init_list_archives(1024);
     l_mean_healthy = malloc(ITER * sizeof(float));
     l_mean_infected = malloc(ITER * sizeof(float));
     l_mean_recovered = malloc(ITER * sizeof(float));
@@ -279,25 +283,20 @@ int main(int argc, char *argv[])
     calculate_metric_mean();
 
     printf("[METRICAS]: P%d %6.4lf\n", world_rank, l_metrics[2]);
-    MPI_Gather(l_positions, 10000000, MPI_CHAR, recv_positions, 10000000, MPI_CHAR, 0, MPI_COMM_WORLD);
+    MPI_Gather(l_positions, 1000000, MPI_CHAR, recv_positions, 1000000, MPI_CHAR, 0, MPI_COMM_WORLD);
     
     MPI_Gather(l_metrics, 5, MPI_FLOAT, recv_metrics, 5, MPI_FLOAT, 0, MPI_COMM_WORLD);
     
     if (world_rank == 0)
     {
-        
-        if ((l_positions_aux = malloc(10000000 * world_size * sizeof(char))) == NULL)
-        {
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
         sprintf(l_positions_aux, "%s", recv_positions);
         for (i = 1; i < world_size; i++)
         {
-            strcat(l_positions_aux, &recv_positions[10000000 * i]);
+            strcat(l_positions_aux, &recv_positions[1000000 * i]);
         }
         print_metrics();
         print_positions();
-        free(l_positions_aux);
+        //free(l_positions_aux);
         //free_recv_metrics();
     }
 
@@ -1629,8 +1628,8 @@ void print_metrics()
     }
 
     float mean_values[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
-    char str_m[100000];
-    char str_aux_m[10000];
+    char str_m[1000000];
+    char str_aux_m[1000000];
     int i, j, pos;
     for (i = 0; i < world_size; i+=5)
     {
@@ -1644,8 +1643,8 @@ void print_metrics()
 
     printf("\nPersonas sanas : %6.4lf \nPersonas contagiadas : %6.4lf \nPersonas recuperadas : %6.4lf \nPersonas fallecidas : %6.4lf \nR0 : %6.4lf \n", mean_values[0], mean_values[1], mean_values[2], mean_values[3], mean_values[4]);
     snprintf(str_aux_m, sizeof(str_aux_m), "%6.4lf - %6.4lf - %6.4lf - %6.4lf - %6.4lf ", mean_values[0], mean_values[1], mean_values[2], mean_values[3], mean_values[4]);
-    strcat(str_m, str_aux_m);
-    fprintf(arch_metrics, str_m);
+    //strcat(str_m, str_aux_m);
+    fprintf(arch_metrics, str_aux_m);
 
     if (fclose(arch_metrics) != 0)
     {
@@ -1670,8 +1669,8 @@ void print_positions()
 
 void save_positions(int world_rank, int iteration)
 {
-    char str[10000];
-    char str_aux[10000];
+    char str[1000000];
+    char str_aux[1000000];
     snprintf(str_aux, sizeof(str), "P%d | ITERACCION: %d | {INFECTED - ", world_rank, iteration);
     strcat(str, str_aux);
     int i;
