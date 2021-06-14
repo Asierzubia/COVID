@@ -15,19 +15,20 @@ FILE *arch_metrics, *arch_positions;
 float l_metrics[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
 
 
-void calculate_metrics()
-{
-    l_metrics[0] = l_metrics[0] + cont_healthy;
-    l_metrics[1] = l_metrics[1] + cont_recovered;
-    l_metrics[2] = l_metrics[2] + cont_infected;
-    l_metrics[3] = l_metrics[3] + cont_death;
-    //l_metrics[4] = l_metrics[4] + cont_ ;
+// void calculate_metrics()
+// {
+//     l_metrics[0] = l_metrics[0] + cont_healthy;
+//     l_metrics[1] = l_metrics[1] + cont_recovered;
+//     l_metrics[2] = l_metrics[2] + cont_infected;
+//     l_metrics[3] = l_metrics[3] + cont_death;
+//     l_metrics[4] = l_metrics[4] + cont_R0 ;
 
-    cont_healthy = 0;
-    cont_recovered = 0;
-    cont_infected = 0;
-    cont_death = 0;
-}
+//     cont_healthy = 0;
+//     cont_recovered = 0;
+//     cont_infected = 0;
+//     cont_death = 0;
+//     cont_R0 = 0;
+// }
 
 void calculate_metric_mean()
 {
@@ -37,6 +38,7 @@ void calculate_metric_mean()
     l_metrics[1] = l_metrics[1] / num_batch;
     l_metrics[2] = l_metrics[2] / num_batch;
     l_metrics[3] = l_metrics[3] / num_batch;
+    l_metrics[4] = l_metrics[4] / num_batch;
 }
 
 void save_metrics(int world_rank, int iteration)
@@ -45,19 +47,19 @@ void save_metrics(int world_rank, int iteration)
     l_metrics[1] = l_metrics[1] + (float) cont_recovered;
     l_metrics[2] = l_metrics[2] + (float) cont_infected;
     l_metrics[3] = l_metrics[3] + (float) cont_death;
-    l_metrics[4] = 0.0 ;
+    l_metrics[4] = l_metrics[3] + (float) cont_R0; ;
 
     cont_healthy = 0;
     cont_recovered = 0;
     cont_infected = 0;
     cont_death = 0;
+    cont_R0 = 0;
 }
 
 void print_metrics()
 {
     printf("[METRICAS]: Imprimiendo metrics...\n");
-    printf("[METRICAS]: %6.4lf - %6.4lf - %6.4lf - %6.4lf - %6.4lf - %6.4lf\n", recv_metrics[0], recv_metrics[1], recv_metrics[2], recv_metrics[3], recv_metrics[4], recv_metrics[5]);
-    //printf("\nPersonas sanas : %6.4lf \nPersonas contagiadas : %6.4lf \nPersonas recuperadas : %6.4lf \nPersonas fallecidas : %6.4lf \nR0 : %6.4lf \n", mean_values[0], mean_values[1], mean_values[2], mean_values[3], mean_values[4]);
+    //printf("[METRICAS]: %6.4lf - %6.4lf - %6.4lf - %6.4lf - %6.4lf - %6.4lf\n", recv_metrics[14], recv_metrics[15], recv_metrics[16], recv_metrics[17], recv_metrics[18], recv_metrics[21]);
     //printf("[METRICAS]: %6.4lf - %6.4lf - %6.4lf - %6.4lf - %6.4lf \n", recv_metrics[0][0], recv_metrics[0][1], recv_metrics[0][2], recv_metrics[0][3], recv_metrics[0][4]);
     arch_metrics = fopen("METRICAS.metricas", "w");
     if (arch_metrics == NULL)
@@ -68,19 +70,22 @@ void print_metrics()
     float mean_values[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
     char str_m[1000];
     char str_aux_m[1000];
-    int i, j, pos;
-    for (i = 0; i < world_size; i+=5)
+    int i, j, k, pos;
+    k = 0;
+    pos = 0;
+    for (i = 0; i < 5; i++)
     {
-        for (j = 0; j < 5; j++)
+        pos = i;
+        for (j = 0; j < world_size; j++)
         {
-            pos = i+j;
-            mean_values[j] = mean_values[j] + recv_metrics[pos];
+            mean_values[i] = mean_values[i] + recv_metrics[pos];
+            //printf("%d - %6.4lf - %6.4lf - %d \n", pos, recv_metrics[pos], mean_values[i], i);
+            pos += 5;
         }
-        
     }
 
-    printf("%6.4lf - %6.4lf - %6.4lf - %6.4lf - %6.4lf ", mean_values[0], mean_values[1], mean_values[2], mean_values[3], mean_values[4]);
-    snprintf(str_aux_m, sizeof(str_aux_m), "%6.4lf - %6.4lf - %6.4lf - %6.4lf - %6.4lf ", mean_values[0], mean_values[1], mean_values[2], mean_values[3], mean_values[4]);
+    printf("\nPersonas sanas : %6.4lf \nPersonas contagiadas : %6.4lf \nPersonas recuperadas : %6.4lf \nPersonas fallecidas : %6.4lf \nR0 : %6.4lf \n", mean_values[0], mean_values[1], mean_values[2], mean_values[3], mean_values[4]);
+    snprintf(str_aux_m, sizeof(str_aux_m), "Personas sanas : %6.4lf \nPersonas contagiadas : %6.4lf \nPersonas recuperadas : %6.4lf \nPersonas fallecidas : %6.4lf \nR0 : %6.4lf \n", mean_values[0], mean_values[1], mean_values[2], mean_values[3], mean_values[4]);
     //strcat(str_m, str_aux_m);
     fprintf(arch_metrics, str_aux_m);
 
@@ -109,7 +114,7 @@ void save_positions(int world_rank, int iteration)
 {
     char str[buffer_node];
     char str_aux[buffer_node];
-    snprintf(str_aux, sizeof(str), "P%d | ITERACCION: %d | {INFECTED - ", world_rank, iteration);
+    snprintf(str_aux, sizeof(str_aux), "P%d | ITERACION: %d | {INFECTED - ", world_rank, iteration);
     strcat(str, str_aux);
     int i;
     for (i = 0; i < id_contI; i++) // INFECTED
@@ -140,7 +145,6 @@ void save_positions(int world_rank, int iteration)
         }
     }
     strcat(str, "}\n");
-    //printf(">>>PRINT %s\n",str); (BATCH/ITER)-1
     strcpy(l_positions, str);
 }
 

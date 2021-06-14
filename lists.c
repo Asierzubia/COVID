@@ -25,11 +25,6 @@ void free_all_lists(){
     free(recv_metrics);
     free(cont_index_return);
     free(l_person_propagate_recive);
-    free(l_mean_healthy); 
-    free(l_mean_infected);
-    free(l_mean_recovered);
-    free(l_mean_death);
-    free(l_mean_R0);
     free_move_list();
     free_prop_list();
     free_person_move();

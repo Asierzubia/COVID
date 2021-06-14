@@ -60,13 +60,20 @@ int main(int argc, char *argv[])
     num_bach = 0;
     cont_iter = 0;
     age_mean = conf.ageMean;
-    buffer_node = conf.world_size * conf.world_size * (conf.iter/conf.batch) * 10;
+    buffer_node = conf.world_size * conf.world_size * (conf.iter/conf.batch) * 100;
+    if (buffer_node > 7000000)
+    {
+        buffer_node = 7000000;
+    }
     buffer_total = buffer_node * world_size;
+
     cont_healthy = 0;
     cont_death = 0;
     cont_infected = 0;
     cont_recovered = 0;
+    cont_R0 = 0;
 
+    printf("%d \n", buffer_total);
     //Ficticio
     person_t persona_virtual;
     persona_virtual.id = id_contNotI;
@@ -332,6 +339,7 @@ void propagate_arrived()
                 }
                 l_person_notinfected[id].id = -1;
             }
+            cont_R0++;
         }
     }
 }
@@ -990,6 +998,7 @@ void propagate(person_t *person)
                         cont_infected++;
                     }
                 }
+                cont_R0++;
             }
         }
         else // VISITANTE

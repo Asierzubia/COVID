@@ -88,7 +88,7 @@ float age_mean, prob_infection, recovery_period, prob_direction, prob_speed;
 int identificador_global;
 int iter, posX, posY, i, j, k, position, seed, mu, alpha, beta;
 int num_persons_to_vaccine, group_to_vaccine, when_change_group, person_vaccinned, radius, vaccines_left;
-int id_contVaccined, idx_iter, cont_bach, id_contI, id_contNotI, cont_death, cont_healthy, cont_infected, cont_recovered, cont_move_visitor, cont_move_return, cont_propagate_visitor;
+int id_contVaccined, idx_iter, cont_bach, id_contI, id_contNotI, cont_death, cont_healthy, cont_infected, cont_recovered, cont_R0, cont_move_visitor, cont_move_return, cont_propagate_visitor;
 int bach, cont_bach, sanas, contagiadas, fallecidas, recuperadas, RO, num_bach;
 int p_death, p_infected, p_recovered, p_healthy, p_RO;
 int aux_death, aux_infected, aux_recovered, aux_healthy, aux_RO;
@@ -104,7 +104,6 @@ float iter_healthy, iter_recovered, iter_infected, iter_death, iter_RO;
 
 int **index_return_person;
 int *cont_index_return;
-float *l_mean_healthy, *l_mean_infected, *l_mean_recovered, *l_mean_death, *l_mean_R0;
 float *recv_healthy, *recv_infected, *recv_recovered, *recv_death, *recv_R0;
 char *l_positions, *l_positions_aux, *l_metrics_aux, *recv_positions;
 float *recv_metrics;
