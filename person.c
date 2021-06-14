@@ -51,13 +51,3 @@ void print_person(person_t *p, int procesador, char lista)
     printf("[PERSON]: P%d --> ID_Global:%d|ID:%d|State:%d|Age:%d|Incubation:%d|InfectionProb:%6.4lf|Recovery:%d|Coord:[%d,%d]|Speed[%d,%d]\n",
            procesador, p->id_global, p->id, p->state, p->age, p->incubation_period, p->prob_infection, p->recovery, p->coord.x, p->coord.y, p->speed[0], p->speed[1]);
 }
-
-void getAlphaBeta(int ageMean){
-
-	float normalized_age = ageMean / 100.0;
-    float variance = pow((16 / 100.0),2);
-
-    alpha = roundf( ((1 - normalized_age) * pow(normalized_age,2) - (variance * normalized_age)) / variance );
-    beta = roundf( (alpha * ( 1 - normalized_age ))  / normalized_age );
- 
-}

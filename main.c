@@ -13,7 +13,7 @@
 
 /*Variables globales*/
 
-float l_death_prob[9] = {0.0, 0.002, 0.002, 0.002, 0.004, 0.013, 0.036, 0.08, 0.148};
+float l_death_prob[9] = {6.9204, 6.9204, 6.9204, 6.9204, 13.8408, 55.9827, 124.5674, 276.8166, 512.1107};
 
 
 MPI_Datatype coord_type;
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     int population = 0;
     int cont_iterations = 0;
     cont_bach = 1;
-    when_change_group = 5;
+    when_change_group = ITER / 15;
     group_to_vaccine = 8;
     alpha = 2;
     beta = 5;
@@ -93,11 +93,12 @@ int main(int argc, char *argv[])
         quadrant_x = conf.world_size / (int)floor(sqrt(world_size));
         quadrant_y = conf.world_size / (int)ceil(sqrt(world_size));
         population = round(conf.population_size / world_size);
-        num_persons_to_vaccine = round(conf.population_size * conf.percent);
+        num_persons_to_vaccine = round(conf.iter / (conf.population_size * conf.percent )) / world_size;
         float *recv_healthy, *recv_infected, *recv_recovered, *recv_death, *recv_R0;
         recv_positions = malloc(buffer_total * sizeof(char));
         getAlphaBeta(age_mean);
     }
+
     MPI_Bcast(&population, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&quadrant_x, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&quadrant_y, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -129,10 +130,11 @@ int main(int argc, char *argv[])
         create_person(world_rank);
     }
 
+    print_lists(world_rank);
+
     for (k = 0; k < conf.iter; k++) // ITERACCIONES
     {
         cont_propagate_recive = 0;
-        
         if (cont_iterations >= when_change_group)
         {
             group_to_vaccine--;
@@ -302,7 +304,7 @@ void propagate_arrived()
             change_infection_prob(&l_person_notinfected[id]);
             if (l_person_notinfected[id].prob_infection > MAX_INFECTION) // Se infecta
             {
-                int prob_aux = 1000 * calculate_prob_death(l_person_notinfected[id].age);
+                int prob_aux = calculate_prob_death(l_person_notinfected[id].age);
                 if (random_number(0, MAX_DEATH) <= prob_aux) // MUERE
                 {
                     printf("[ARRIVED]: P%d Iter : %d | Origen : P%d | {MUERTE->%d} Pos : [%d,%d] \n", world_rank, cont_iter, i, l_person_notinfected[id].id_global, l_person_propagate_recive[i].x, l_person_propagate_recive[i].y);
@@ -957,12 +959,11 @@ void propagate(person_t *person)
                 // Se guarda la persona y se calculan los datos
                 printf("[PROPAGATE]: {INDEX} P%d Iter : %d | ID_Global : %d | Mirar ID_Local : %d | Mirar Pos [%d,%d] \n", world_rank, cont_iter, person->id_global, index.id, x + directions[n][0], y + directions[n][1]);
                 memcpy(&person_aux, &l_person_notinfected[index.id], sizeof(person_t));
-                //person_aux.prob_infection = 0.9;
                 change_infection_prob(&person_aux);
                 if (person_aux.prob_infection > MAX_INFECTION) // SE INFECTA
                 {
                     l_person_notinfected[index.id].id = -1;
-                    prob_aux = 1000 * calculate_prob_death(person_aux.age);
+                    prob_aux = calculate_prob_death(person_aux.age);
                     if (random_number(0, MAX_DEATH) <= prob_aux) // MUERE
                     {
                         printf("[PROPAGATE]: P%d Iter : %d | {MUERTE -> %d} | Atacado por --> ID_Global : %d | ID_Local : %d | Pos : [%d,%d] \n", world_rank, cont_iter, l_person_notinfected[index.id].id_global, person->id_global, person->id, x + directions[n][0], y + directions[n][1]);

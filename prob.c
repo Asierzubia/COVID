@@ -32,10 +32,15 @@ void change_move_prob(person_t *person)
     person->speed[1] = random_number(0, MAX_SPEED);
 }
 
-
 void change_infection_prob(person_t *person)
 {
-    person->prob_infection = gsl_ran_beta(r, alpha, beta);
+    float alpha_local, beta_local;
+    float normalized_death = 50 / 100.0;
+    float variance = pow((16 / 100.0),2);
+
+    alpha_local = roundf( ((1 - normalized_death) * pow(normalized_death,2) - (variance * normalized_death)) / variance );
+    beta_local = roundf( (alpha_local * ( 1 - normalized_death ))  / normalized_death );
+    person->prob_infection = gsl_ran_beta(r, alpha_local, beta_local);
 }
 
 void init_person_parameters(person_t *persona, int state, int id_local)
@@ -52,3 +57,11 @@ void init_person_parameters(person_t *persona, int state, int id_local)
     world[persona->coord.x][persona->coord.y].id = id_local;
 }
 
+void getAlphaBeta(int ageMean){
+
+	float normalized_age = ageMean / 100.0;
+    float variance = pow((16 / 100.0),2);
+
+    alpha = roundf( ((1 - normalized_age) * pow(normalized_age,2) - (variance * normalized_age)) / variance );
+    beta = roundf( (alpha * ( 1 - normalized_age ))  / normalized_age );
+}

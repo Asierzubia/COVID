@@ -4,19 +4,20 @@
 #define MAX_ARGS 256
 #define MAX_FILE_LEN 4096
 #define SIZE_WORLD 16
-#define PERCENT 0.05
+#define PERCENT 0.07
 #define MAX_SPEED 2
 #define MAX_DIRECTION 7
-#define MAX_INCUBATION 5
+#define MAX_INCUBATION 40
 #define MAX_RECOVERY 10
-#define MAX_INFECTION 0.0 //0.6
-#define MAX_DEATH 200
-#define POPULATION_SIZE 60
-#define BATCH 2
+#define MAX_INFECTION 0.5
+#define MAX_DEATH 1000
+#define POPULATION_SIZE 256
+#define BATCH 5
 #define CUADRICULA 5
-#define ITER 1000
+#define ITER 10000
 #define SEED 3
-#define AGEMEAN 28
+#define AGEMEAN 60
+
 /*Estructuras*/
 
 typedef struct configuration_t {
