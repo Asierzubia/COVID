@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     MPI_Bcast(&alpha, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&beta, 1, MPI_INT, 0, MPI_COMM_WORLD);
     if(quadrant_x != quadrant_y){
-        printf("LAS MATRICES DEL MUNDO DEBEN SER CUADRADAS, INTRODUCE UN NUMERO DE PROCESADORES CON EL CUAL SEAN CUADRADAS LAS MATRICES DEL MUNDO");
+        printf("LAS MATRICES DEL MUNDO DEBEN SER CUADRADAS, INTRODUCE UN NUMERO DE PROCESADORES CON EL CUAL SEAN CUADRADAS LAS MATRICES DEL MUNDO\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
     PX = quadrant_x * (world_rank % (int)round(sqrt(world_size)));
