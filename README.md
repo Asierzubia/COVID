@@ -216,19 +216,17 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 <!-- CONTACT -->
 ## Contact
-
-Iñaki García : i.garcia.noya@gmail.com
-Asier Zubia: azubia022@gmail.com
-Project Link: [https://github.com/Asierzubia/CovidMPI](https://github.com/Asierzubia/CovidMPI)
+- Iñaki García : i.garcia.noya@gmail.com
+- Asier Zubia: azubia022@gmail.com
+- Project Link: [https://github.com/Asierzubia/CovidMPI](https://github.com/Asierzubia/CovidMPI)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- CONTRIBUTORS -->
 
 ## Contributors
-* iakigarci [https://github.com/iakigarci/](https://github.com/iakigarci/)
-
-* Asierzubia [https://github.com/Asierzubia/](https://github.com/Asierzubia/)
+- @iakigarci [https://github.com/iakigarci/](https://github.com/iakigarci/)
+- @Asierzubia [https://github.com/Asierzubia/](https://github.com/Asierzubia/)
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
