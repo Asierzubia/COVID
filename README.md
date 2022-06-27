@@ -3,25 +3,24 @@
 <br />
 <div align="center">
 
-  <h1 align="center">Best-README-Template</h1>
+  <h1 align="center">Covid propagation simulator </h1>
 
   <p align="center">
-    An awesome README template to jumpstart your projects!
+    MPI paralell Covid propagation
     <br />
-    <a href="https://github.com/othneildrew/Best-README-Template"><strong>Explore the docs »</strong></a>
     <!--<br />
     <br />
     <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a>
     ·
     <a href="https://github.com/othneildrew/Best-README-Template/issues">Report Bug</a>
     ·
-    <a href="https://github.com/othneildrew/Best-README-Template/issues">Request Feature</a>-->
+    <a href="https://github.com/othneildrew/Best-README-Template/issues">Request Feature</a>
   </p>
   <h3 align="left">Connect with me:</h3>
     <p align="left">
     <a href="https://www.linkedin.com/in/iakigarcia" target="blank"><img align="center" src="https://raw.githubusercontent.com/rahuldkjain/github-profile-readme-generator/master/src/images/icons/Social/linked-in-alt.svg" alt="iakigarci" height="30" width="40" /></a>
     <a href="https://es.stackoverflow.com/users/158274/iakigarci" target="blank"><img align="center" src="https://raw.githubusercontent.com/rahuldkjain/github-profile-readme-generator/master/src/images/icons/Social/stack-overflow.svg" alt="iakigarci" height="30" width="40" /></a>
-    </p>
+    </p>-->
 </div>
 
 
@@ -47,7 +46,6 @@
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
 
@@ -56,7 +54,31 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[!alt text]()
+<p align="center">
+    <img src="DataEstructuresMPI.jpg">
+</p>
+The main objective of this project is to simulate the spread of Covid in civilization. The computation of the simulation has been carried out in parallel, using the MPI library of C.
+
+The following components have been taken into account to perform the simulation:
+
+- Person
+- Population
+- Scenario
+
+In the specified scenario, each person can perform the following actions: move, vaccinate and propagate. The simulation results are stored in a _.out_ file. Here is a summary of the simulation execution:
+
+- Initialize the variables required for MPI.
+- If it is Node 0, the different program configuration methods are checked, and the global variables of the simulation configuration are initialized.
+- Initialize the global variables.
+- The _gsl_ library is initialized, for the probabilities calculation.
+- In the case of Node 0, the quadrants, the people to be vaccinated and the population per node are calculated. Once calculated, each variable is sent with an _MPI_Bcast_.
+- Initialize the lists dynamically.
+- Each node creates its population, with the previously calculated parameters (population per node, quadrants...).
+- Iterate with a loop up to the stipulated number of iterations. For each iteration, all the actions that people can do are carried out.
+- Each node sends its metrics and positions to Node 0.
+- Node 0 prints the metrics and positions in its corresponding file.
+- All the structures that remain to be freed are released.
+- The simulation is finished.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -80,7 +102,7 @@ The technologies used for this project are as follows:
 <!-- React <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="40" height="40"/>-->
 <!-- Mongo <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg" width="40" height="40"/>-->
 <!-- PYTHON <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="40" height="40"/>-->
-<!--  <img src="" width="40" height="40"/>-->
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg" width="40" height="40"/>
 <!--  <img src="" width="40" height="40"/>-->
 <!--  <img src="" width="40" height="40"/>-->
 <!--  <img src="" width="40" height="40"/>-->
@@ -93,33 +115,47 @@ The technologies used for this project are as follows:
 <!-- GETTING STARTED -->
 ## Getting Started
 
-
-
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-* npm
+Is mandatory to have installed C program an the _make_ package. To avoid errors during runtime, use Linux instead Windows. The following examples are for an Ubuntu distribution:
+* c
   ```sh
-  npm install npm@latest -g
+  sudo apt install GCC
   ```
-
 ### Installation
 
-_Below is an example of how you can instruct your audience on installing and setting up your app. This template doesn't rely on any external dependencies or services._
-
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
+1. Clone the repo
    ```sh
-   git clone https://github.com/your_username_/Project-Name.git
+   git clone https://github.com/iakigarci/KernelSimulator.git
    ```
-3. Install NPM packages
+2. Install C packages
    ```sh
-   npm install
+   sudo apt install make gsl
    ```
-4. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
+3. Compile source files
+   ```sh
+   make
    ```
+4. Run the init script. Change the parameters name with the simulation parameters
+   ```sh
+   ./run.sh metrics.txt [parameters]
+   ```
+   For example:
+   ```sh
+   ./run.sh "covid.out -s8 -p0.2 -g60 -b2 -i10 -d2 -m20" 4 
+   ```
+   With configuration file:
+   ```sh
+   ./run.sh ”covid.out config_file.txt” 4 
+   ```
+The parameters that the program accepts are the following. it can also be executed using a _.txt_ configuration file 
+- **-s or -world size:** Side of the square matrix. Default value 8.
+- **-p or -percent:** Percentage of the population to be vaccinated per iteration. Default value 0.05.
+- **-g or -population size:** Population size. Default value 60.
+- **-b or -batch:** Number of iterations per batch. Default value 2.
+- **-i or -iter:** Number of iterations. Default value 10000.
+- **-d or -seed:** N ́umero que act ́ua como semilla. Default value 3.
+- **-m or -ageMean:** Average age of the population. Default value 28.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -128,9 +164,7 @@ _Below is an example of how you can instruct your audience on installing and set
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
-
-_For more examples, please refer to the [Documentation](https://example.com)_
+_For more examples, please refer to the [Documentation](CovidMPIDocumentation.pdf) (Spanish)_
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -184,28 +218,18 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 ## Contact
 
 Iñaki García : i.garcia.noya@gmail.com
-
-Project Link: [https://github.com/iakigarci/repo_name](https://github.com/iakigarci/repo_name)
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-
-
-<!-- ACKNOWLEDGMENTS -->
-## Acknowledgments
-
-During this project, knowledge has been acquired that will be important for the future. Listed here are the resources that have been used in order to successfully complete this project:
-
-* [Choose an Open Source License](https://choosealicense.com)
+Asier Zubia: azubia022@gmail.com
+Project Link: [https://github.com/Asierzubia/CovidMPI](https://github.com/Asierzubia/CovidMPI)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- CONTRIBUTORS -->
-<!--
+
 ## Contributors
 * iakigarci [https://github.com/iakigarci/](https://github.com/iakigarci/)
 
--->
+* Asierzubia [https://github.com/Asierzubia/](https://github.com/Asierzubia/)
+
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
